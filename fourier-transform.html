@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La Transformada de Fourier — Electrónica e Instrumentación</title>
+<style>
+  :root{
+    --bg:#0a1628;
+    --bg-plane:#081120;
+    --surface:#0f2038;
+    --surface-2:#13294a;
+    --grid-line:#1e3a5f;
+    --border:rgba(255,255,255,0.10);
+    --border-strong:rgba(255,255,255,0.18);
+    --text-primary:#f0f4f8;
+    --text-secondary:#9fb3c8;
+    --text-muted:#6b8199;
+    --blue:#3987e5;
+    --orange:#d95926;
+    --aqua:#199e70;
+    --yellow:#c98500;
+    --magenta:#d55181;
+    --violet:#9085e9;
+    --red:#e66767;
+    --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg-plane);
+    color:var(--text-primary);
+    font-family:var(--sans);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1040px;margin:0 auto;padding:0 20px 80px;}
+  a{color:var(--blue);}
+
+  .hero{
+    position:relative;
+    background:
+      repeating-linear-gradient(0deg, var(--grid-line) 0 1px, transparent 1px 32px),
+      repeating-linear-gradient(90deg, var(--grid-line) 0 1px, transparent 1px 32px),
+      linear-gradient(180deg, var(--bg) 0%, var(--bg-plane) 100%);
+    border-bottom:1px solid var(--border);
+    padding:42px 20px 30px;
+    margin-bottom:34px;
+  }
+  .hero:before{
+    content:"";
+    position:absolute; inset:0;
+    background:
+      repeating-linear-gradient(0deg, rgba(63,135,229,0.10) 0 1px, transparent 1px 32px),
+      repeating-linear-gradient(90deg, rgba(63,135,229,0.10) 0 1px, transparent 1px 32px);
+    pointer-events:none;
+  }
+  .hero-inner{max-width:1000px;margin:0 auto;position:relative;}
+  .eyebrow{
+    display:inline-block;
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--blue);
+    background:rgba(57,135,229,0.12);
+    border:1px solid rgba(57,135,229,0.35);
+    padding:4px 10px;
+    border-radius:4px;
+    margin-bottom:16px;
+  }
+  h1{
+    font-size:clamp(28px,4vw,40px);
+    margin:0 0 10px;
+    letter-spacing:-0.01em;
+  }
+  .subtitle{
+    color:var(--text-secondary);
+    font-size:17px;
+    max-width:660px;
+    margin:0;
+  }
+  .pagenav{
+    margin-top:16px;
+    font-family:var(--mono);
+    font-size:13px;
+  }
+  .pagenav a{color:#8fbcf5; text-decoration:none; border-bottom:1px dashed rgba(143,188,245,0.4);}
+  .pagenav a:hover{border-bottom-style:solid;}
+
+  h2{
+    font-size:22px;
+    margin:0 0 4px;
+    letter-spacing:-0.005em;
+  }
+  .section-label{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.09em;
+    text-transform:uppercase;
+    color:var(--text-muted);
+    margin-bottom:6px;
+  }
+  section{margin-bottom:46px;}
+  .lede{color:var(--text-secondary); max-width:760px;}
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:24px;
+  }
+
+  /* Controls */
+  .controls{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:16px 24px;
+    margin-bottom:22px;
+    padding-bottom:20px;
+    border-bottom:1px dashed var(--border);
+  }
+  .field label{
+    display:flex;
+    justify-content:space-between;
+    font-size:12.5px;
+    color:var(--text-secondary);
+    margin-bottom:6px;
+    font-family:var(--mono);
+  }
+  .field label .val{color:var(--text-primary); font-weight:600;}
+  select, input[type=range]{width:100%;}
+  select{
+    background:var(--surface-2);
+    color:var(--text-primary);
+    border:1px solid var(--border-strong);
+    border-radius:6px;
+    padding:8px 10px;
+    font-family:var(--sans);
+    font-size:14px;
+  }
+  input[type=range]{
+    -webkit-appearance:none;
+    height:4px;
+    border-radius:2px;
+    background:var(--grid-line);
+    outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:15px;height:15px;border-radius:50%;
+    background:var(--blue);
+    border:2px solid #cfe0fb;
+    cursor:pointer;
+    margin-top:-6px;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:13px;height:13px;border-radius:50%;
+    background:var(--blue); border:2px solid #cfe0fb; cursor:pointer;
+  }
+  .field[data-hidden="1"]{display:none;}
+  .checkline{
+    display:flex; align-items:center; gap:8px;
+    font-size:13.5px; color:var(--text-secondary);
+    font-family:var(--mono);
+  }
+
+  /* Canvas panels */
+  .plots{display:grid; grid-template-columns:1fr; gap:18px;}
+  .plot-box{background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:14px 16px 10px;}
+  .plot-title{font-size:12.5px; color:var(--text-secondary); font-family:var(--mono); display:flex; justify-content:space-between; margin-bottom:6px;}
+  canvas{width:100%; display:block; border-radius:4px;}
+  .readout{
+    margin-top:10px;
+    font-family:var(--mono);
+    font-size:12.5px;
+    color:var(--text-muted);
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px 18px;
+  }
+  .readout b{color:var(--text-primary); font-weight:600;}
+
+  /* Tables */
+  table{width:100%; border-collapse:collapse; font-size:14.5px;}
+  thead th{
+    text-align:left;
+    font-family:var(--mono);
+    font-size:11.5px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--text-muted);
+    border-bottom:1px solid var(--border-strong);
+    padding:0 12px 10px;
+  }
+  tbody td{
+    padding:13px 12px;
+    border-bottom:1px solid var(--border);
+    vertical-align:middle;
+    color:var(--text-secondary);
+  }
+  tbody tr:last-child td{border-bottom:none;}
+  td.prop-name{color:var(--text-primary); font-weight:600; white-space:nowrap;}
+  .formula-box{
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:18px 20px;
+    margin-bottom:14px;
+  }
+  .formula-box .flabel{font-family:var(--mono); font-size:12px; color:var(--blue); margin-bottom:8px; text-transform:uppercase; letter-spacing:.06em;}
+  .formula-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px;}
+
+  /* Math typesetting (pure HTML/CSS — no external fonts or libraries required) */
+  .eq{
+    font-family:"Cambria Math","STIX Two Math",Georgia,"Times New Roman",serif;
+    font-size:17px;
+    color:var(--text-primary);
+    letter-spacing:.01em;
+  }
+  .eq + .eq{margin-top:10px;}
+  .eq i{font-style:italic;}
+  .eq sup, .eq sub{font-size:0.64em;}
+  .intlim, .sumlim{
+    display:inline-flex; flex-direction:column; align-items:center; justify-content:center;
+    font-size:1.5em; line-height:0.6; vertical-align:middle; margin:0 3px; position:relative; top:3px;
+  }
+  .intlim sup, .sumlim sup{font-size:0.32em; line-height:1; margin-bottom:1px;}
+  .intlim sub, .sumlim sub{font-size:0.32em; line-height:1; margin-top:1px;}
+  .frac{
+    display:inline-flex; flex-direction:column; vertical-align:middle;
+    text-align:center; margin:0 4px; line-height:1.15; font-size:0.92em; position:relative; top:2px;
+  }
+  .frac .n{padding:0 3px; border-bottom:1.3px solid currentColor;}
+  .frac .d{padding:1px 3px 0;}
+  table .eq{font-size:15px; color:var(--text-secondary);}
+
+  .callout{
+    background:rgba(63,135,229,0.08);
+    border:1px solid rgba(63,135,229,0.3);
+    border-radius:8px;
+    padding:16px 18px;
+    color:var(--text-secondary);
+    font-size:14.5px;
+    margin-top:16px;
+  }
+  .callout b{color:var(--text-primary);}
+
+  /* Exercises */
+  .exercise{
+    border:1px solid var(--border); border-radius:8px; background:var(--surface-2);
+    padding:18px 20px; margin-bottom:14px;
+  }
+  .exercise:last-child{margin-bottom:0;}
+  .ex-num{font-family:var(--mono); font-size:12px; color:var(--blue); margin-bottom:6px;}
+  .ex-q{color:var(--text-primary); margin:0 0 14px; font-size:15px;}
+  .ex-btn{
+    background:rgba(57,135,229,0.15); color:#8fbcf5; border:1px solid rgba(57,135,229,0.4);
+    border-radius:6px; padding:7px 14px; font-family:var(--mono); font-size:12.5px; cursor:pointer;
+  }
+  .ex-btn:hover{background:rgba(57,135,229,0.25);}
+  .ex-answer{
+    margin-top:14px; padding-top:14px; border-top:1px dashed var(--border);
+    color:var(--text-secondary); font-size:14.5px; display:none;
+  }
+  .ex-answer.show{display:block;}
+
+  footer{
+    margin-top:60px;
+    padding-top:20px;
+    border-top:1px solid var(--border);
+    color:var(--text-muted);
+    font-size:12.5px;
+    font-family:var(--mono);
+  }
+  @media (max-width:640px){
+    .hero{padding:32px 16px 24px;}
+    .card{padding:18px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-inner">
+    <span class="eyebrow">Electrónica e Instrumentación · UPM</span>
+    <h1>La Transformada de Fourier</h1>
+    <p class="subtitle">Qué ocurre cuando una señal NO se repite: cómo describir el contenido en frecuencia de un pulso, un transitorio o cualquier señal de un solo evento, mediante un espectro continuo X(f).</p>
+    <p class="pagenav">→ Página relacionada: <a href="fourier-series.html">la Serie de Fourier (señales periódicas, espectro de líneas)</a></p>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <section id="intuicion">
+    <div class="section-label">01 · Idea intuitiva</div>
+    <h2>Señales que no se repiten necesitan un continuo de frecuencias</h2>
+    <p class="lede">
+      La <a href="fourier-series.html">Serie de Fourier</a> descompone una señal <i>periódica</i> en armónicos discretos k·f₀. Pero la mayoría de señales interesantes — un pulso de un sensor, un transitorio, una palabra hablada — <b style="color:var(--text-primary)">no se repiten nunca</b>. Para esas señales aperiódicas, la Transformada de Fourier generaliza la idea: en vez de una suma de líneas discretas, el contenido en frecuencia se reparte en un <b style="color:var(--text-primary)">espectro continuo</b>, X(f), definido para cualquier frecuencia real.
+    </p>
+    <p class="lede">
+      Formalmente, se puede pensar como el límite de la Serie de Fourier cuando el periodo T₀ tiende a infinito: la separación entre armónicos, f₀=1/T₀, se hace infinitesimal, y la suma discreta Σ<sub>k</sub> se convierte en una integral ∫df. El resultado es una de las herramientas más usadas en ingeniería: permite analizar filtros, caracterizar ruido, diseñar sistemas de comunicaciones y entender por qué un pulso más corto en el tiempo ocupa, inevitablemente, más ancho de banda en frecuencia.
+    </p>
+  </section>
+
+  <section id="explorador">
+    <div class="section-label">02 · Herramienta interactiva</div>
+    <h2>Pulso → espectro continuo</h2>
+    <p class="lede">Elige un pulso (no periódico) y ajusta su duración característica y su desplazamiento en el tiempo. El panel inferior calcula numéricamente su transformada continua X(f) — magnitud y, opcionalmente, fase — evaluada en un barrido fino de frecuencias, no solo en armónicos.</p>
+
+    <div class="card">
+      <div class="controls">
+        <div class="field">
+          <label>Forma del pulso</label>
+          <select id="preset">
+            <option value="rect">Pulso rectangular</option>
+            <option value="tri">Pulso triangular</option>
+            <option value="exp">Exponencial causal e<sup>−at</sup>u(t)</option>
+            <option value="gauss">Pulso gaussiano</option>
+            <option value="sinc">Pulso sinc (banda limitada)</option>
+          </select>
+        </div>
+
+        <div class="field" data-p="rect,tri">
+          <label>Duración τ <span class="val" id="v-tau">0.50 s</span></label>
+          <input type="range" id="tau" min="0.1" max="2" step="0.05" value="0.5">
+        </div>
+
+        <div class="field" data-p="exp">
+          <label>Constante de decaimiento a <span class="val" id="v-a">2.0 /s</span></label>
+          <input type="range" id="a" min="0.5" max="6" step="0.1" value="2">
+        </div>
+
+        <div class="field" data-p="gauss">
+          <label>Desviación σ <span class="val" id="v-sigma">0.20 s</span></label>
+          <input type="range" id="sigma" min="0.05" max="1" step="0.01" value="0.2">
+        </div>
+
+        <div class="field" data-p="sinc">
+          <label>Ancho de banda W <span class="val" id="v-W">3.0 Hz</span></label>
+          <input type="range" id="W" min="1" max="10" step="0.2" value="3">
+        </div>
+
+        <div class="field">
+          <label>Desplazamiento temporal t₀ <span class="val" id="v-t0">0.00 s</span></label>
+          <input type="range" id="t0" min="-1" max="1" step="0.05" value="0">
+        </div>
+
+        <div class="field">
+          <label style="margin-bottom:0;">&nbsp;</label>
+          <div class="checkline"><input type="checkbox" id="showPhase"> mostrar espectro de fase</div>
+        </div>
+      </div>
+
+      <div class="plots">
+        <div class="plot-box">
+          <div class="plot-title"><span>DOMINIO DEL TIEMPO — x(t)</span><span id="t-info"></span></div>
+          <canvas id="cvTime" height="180"></canvas>
+        </div>
+        <div class="plot-box">
+          <div class="plot-title"><span>DOMINIO DE LA FRECUENCIA — |X(f)| (espectro continuo, f ≥ 0)</span><span id="f-info"></span></div>
+          <canvas id="cvMag" height="180"></canvas>
+        </div>
+        <div class="plot-box" id="phaseBox" style="display:none;">
+          <div class="plot-title"><span>ESPECTRO DE FASE — ∠X(f) (grados)</span></div>
+          <canvas id="cvPhase" height="120"></canvas>
+        </div>
+      </div>
+
+      <div class="readout" id="readout"></div>
+
+      <div class="callout" id="sincNote" style="display:none;">
+        <b>Dualidad:</b> este pulso sinc es precisamente el interpolador ideal que reconstruye una señal a partir de sus muestras — el mismo que aparece en la reconstrucción de la página de <a href="nyquist.html">Nyquist-Shannon</a>. Su espectro es un rectángulo perfecto: la dualidad tiempo↔frecuencia intercambia los papeles del pulso rectangular y el pulso sinc.
+      </div>
+      <div class="callout" id="shiftNote" style="display:none;">
+        <b>Desplazamiento temporal:</b> fíjate en que, al mover t₀, el espectro de <b>magnitud</b> no cambia en absoluto — solo se inclina el de <b>fase</b>. Es la propiedad de desplazamiento temporal de la tabla de abajo: retrasar una señal multiplica X(f) por e<sup>−j2πft₀</sup>, que tiene módulo 1.
+      </div>
+    </div>
+  </section>
+
+  <section id="formulas">
+    <div class="section-label">03 · Fórmulas principales</div>
+    <h2>Las expresiones que lo definen todo</h2>
+    <div class="formula-grid">
+      <div class="formula-box">
+        <div class="flabel">Transformada directa</div>
+        <div class="eq">
+          <i>X</i>(<i>f</i>) = <span class="intlim">∫<sup>∞</sup><sub>−∞</sub></span> <i>x</i>(<i>t</i>)&thinsp;<i>e</i><sup>−<i>j</i>2π<i>ft</i></sup>&thinsp;d<i>t</i>
+        </div>
+      </div>
+      <div class="formula-box">
+        <div class="flabel">Transformada inversa</div>
+        <div class="eq">
+          <i>x</i>(<i>t</i>) = <span class="intlim">∫<sup>∞</sup><sub>−∞</sub></span> <i>X</i>(<i>f</i>)&thinsp;<i>e</i><sup>+<i>j</i>2π<i>ft</i></sup>&thinsp;d<i>f</i>
+        </div>
+      </div>
+      <div class="formula-box">
+        <div class="flabel">Teorema de Parseval / Plancherel (energía)</div>
+        <div class="eq">
+          <span class="intlim">∫<sup>∞</sup><sub>−∞</sub></span>|<i>x</i>(<i>t</i>)|²&thinsp;d<i>t</i> &nbsp;=&nbsp; <span class="intlim">∫<sup>∞</sup><sub>−∞</sub></span>|<i>X</i>(<i>f</i>)|²&thinsp;d<i>f</i>
+        </div>
+      </div>
+      <div class="formula-box">
+        <div class="flabel">Producto tiempo-ancho de banda (principio de incertidumbre)</div>
+        <div class="eq" style="font-size:15.5px;">Δ<i>t</i> · Δ<i>f</i> ≳ constante &nbsp;(no se puede concentrar arbitrariamente en tiempo y frecuencia a la vez)</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="propiedades">
+    <div class="section-label">04 · Propiedades</div>
+    <h2>Tabla de propiedades de la Transformada de Fourier</h2>
+    <div class="card" style="overflow-x:auto;">
+      <table id="propTable">
+        <thead>
+          <tr><th>Propiedad</th><th>Dominio del tiempo</th><th>Dominio de la frecuencia</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="prop-name">Linealidad</td><td class="eq"><i>a</i>&thinsp;<i>x</i>(<i>t</i>) + <i>b</i>&thinsp;<i>y</i>(<i>t</i>)</td><td class="eq"><i>a</i>&thinsp;<i>X</i>(<i>f</i>) + <i>b</i>&thinsp;<i>Y</i>(<i>f</i>)</td></tr>
+          <tr><td class="prop-name">Desplazamiento temporal</td><td class="eq"><i>x</i>(<i>t</i>−<i>t</i>₀)</td><td class="eq"><i>X</i>(<i>f</i>)&thinsp;<i>e</i><sup>−<i>j</i>2π<i>ft</i>₀</sup></td></tr>
+          <tr><td class="prop-name">Desplazamiento en frecuencia (modulación)</td><td class="eq"><i>x</i>(<i>t</i>)&thinsp;<i>e</i><sup><i>j</i>2π<i>f</i>₀<i>t</i></sup></td><td class="eq"><i>X</i>(<i>f</i>−<i>f</i>₀)</td></tr>
+          <tr><td class="prop-name">Escalado temporal</td><td class="eq"><i>x</i>(<i>at</i>)</td><td class="eq"><span class="frac"><span class="n">1</span><span class="d">|<i>a</i>|</span></span> <i>X</i>(<span class="frac"><span class="n"><i>f</i></span><span class="d"><i>a</i></span></span>)</td></tr>
+          <tr><td class="prop-name">Dualidad</td><td class="eq"><i>X</i>(<i>t</i>)</td><td class="eq"><i>x</i>(−<i>f</i>)</td></tr>
+          <tr><td class="prop-name">Convolución (tiempo)</td><td class="eq"><i>x</i>(<i>t</i>) ∗ <i>y</i>(<i>t</i>)</td><td class="eq"><i>X</i>(<i>f</i>)&thinsp;<i>Y</i>(<i>f</i>)</td></tr>
+          <tr><td class="prop-name">Multiplicación (convolución en frecuencia)</td><td class="eq"><i>x</i>(<i>t</i>)&thinsp;<i>y</i>(<i>t</i>)</td><td class="eq"><i>X</i>(<i>f</i>) ∗ <i>Y</i>(<i>f</i>)</td></tr>
+          <tr><td class="prop-name">Diferenciación</td><td class="eq"><span class="frac"><span class="n">d</span><span class="d">d<i>t</i></span></span><i>x</i>(<i>t</i>)</td><td class="eq"><i>j</i>2π<i>f</i>&thinsp;<i>X</i>(<i>f</i>)</td></tr>
+          <tr><td class="prop-name">Integración</td><td class="eq"><span class="intlim">∫<sup><i>t</i></sup><sub>−∞</sub></span> <i>x</i>(τ)&thinsp;d&thinsp;τ</td><td class="eq"><span class="frac"><span class="n"><i>X</i>(<i>f</i>)</span><span class="d"><i>j</i>2π<i>f</i></span></span> + <span class="frac"><span class="n"><i>X</i>(0)</span><span class="d">2</span></span>δ(<i>f</i>)</td></tr>
+          <tr><td class="prop-name">Simetría hermítica (x real)</td><td class="eq"><i>x</i>(<i>t</i>) ∈ ℝ</td><td class="eq"><i>X</i>(−<i>f</i>) = <i>X</i>*(<i>f</i>)</td></tr>
+          <tr><td class="prop-name">Parseval (energía)</td><td class="eq"><span class="intlim">∫<sup>∞</sup><sub>−∞</sub></span>|<i>x</i>(<i>t</i>)|²d<i>t</i></td><td class="eq"><span class="intlim">∫<sup>∞</sup><sub>−∞</sub></span>|<i>X</i>(<i>f</i>)|²d<i>f</i></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="ejercicios">
+    <div class="section-label">05 · Ejercicios</div>
+    <h2>Comprueba lo aprendido</h2>
+    <div id="exerciseList"></div>
+  </section>
+
+  <footer>
+    Electrónica e Instrumentación · Material de apoyo interactivo — generado con Claude.
+  </footer>
+</div>
+
+<script>
+// ---------- state ----------
+const state = {
+  preset: 'rect',
+  tau: 0.5,
+  a: 2,
+  sigma: 0.2,
+  W: 3,
+  t0: 0,
+  showPhase: false
+};
+
+const els = {
+  preset: document.getElementById('preset'),
+  tau: document.getElementById('tau'),
+  a: document.getElementById('a'),
+  sigma: document.getElementById('sigma'),
+  W: document.getElementById('W'),
+  t0: document.getElementById('t0'),
+  showPhase: document.getElementById('showPhase'),
+};
+
+function updateFieldVisibility(){
+  document.querySelectorAll('.field[data-p]').forEach(f=>{
+    const list = f.dataset.p.split(',');
+    f.setAttribute('data-hidden', list.includes(state.preset) ? '0' : '1');
+  });
+  document.getElementById('sincNote').style.display = (state.preset==='sinc') ? 'block' : 'none';
+  document.getElementById('shiftNote').style.display = (Math.abs(state.t0) > 1e-6) ? 'block' : 'none';
+}
+
+function syncLabels(){
+  document.getElementById('v-tau').textContent = state.tau.toFixed(2)+' s';
+  document.getElementById('v-a').textContent = state.a.toFixed(1)+' /s';
+  document.getElementById('v-sigma').textContent = state.sigma.toFixed(2)+' s';
+  document.getElementById('v-W').textContent = state.W.toFixed(1)+' Hz';
+  document.getElementById('v-t0').textContent = state.t0.toFixed(2)+' s';
+}
+
+// ---------- signal definition (all presets are single, aperiodic pulses) ----------
+function xOfT(t, s){
+  const tt = t - s.t0;
+  switch(s.preset){
+    case 'rect':
+      return Math.abs(tt) <= s.tau/2 ? 1 : 0;
+    case 'tri': {
+      const w = s.tau;
+      return Math.abs(tt) <= w ? (1 - Math.abs(tt)/w) : 0;
+    }
+    case 'exp':
+      return tt >= 0 ? Math.exp(-s.a*tt) : 0;
+    case 'gauss':
+      return Math.exp(-(tt*tt)/(2*s.sigma*s.sigma));
+    case 'sinc': {
+      const u = 2*s.W*tt;
+      return Math.abs(u) < 1e-9 ? 1 : Math.sin(Math.PI*u)/(Math.PI*u);
+    }
+    default: return 0;
+  }
+}
+
+// natural half-span of the pulse (independent of t0), used to size the display window
+function naturalHalfSpan(s){
+  switch(s.preset){
+    case 'rect':
+    case 'tri': return Math.max(s.tau*1.4, 0.35);
+    case 'exp': return 4.5/s.a;
+    case 'gauss': return 3.2*s.sigma;
+    case 'sinc': return 3.2/s.W;
+    default: return 1;
+  }
+}
+
+function maxFreq(s){
+  switch(s.preset){
+    case 'rect':
+    case 'tri': return Math.min(40, 6/s.tau);
+    case 'exp': return Math.min(40, 3*s.a);
+    case 'gauss': return Math.min(40, 1.6/s.sigma);
+    case 'sinc': return Math.min(40, 1.8*s.W);
+    default: return 10;
+  }
+}
+
+// ---------- continuous spectrum: numeric integral of x(t) e^{-j2*pi*f*t} dt ----------
+function computeSpectrum(s, nFreq=220, nTime=900){
+  const halfSpan = naturalHalfSpan(s) + 1.3; // margin so a shifted pulse stays inside the window
+  const dt = (2*halfSpan)/nTime;
+  const ts = new Array(nTime), xs = new Array(nTime);
+  for(let n=0;n<nTime;n++){
+    const t = -halfSpan + n*dt;
+    ts[n] = t; xs[n] = xOfT(t,s);
+  }
+
+  const fMax = maxFreq(s);
+  const freqs = new Array(nFreq);
+  const mag = new Array(nFreq);
+  const phase = new Array(nFreq);
+  for(let k=0;k<nFreq;k++){
+    const f = fMax*k/(nFreq-1);
+    let re=0, im=0;
+    for(let n=0;n<nTime;n++){
+      const ang = -2*Math.PI*f*ts[n];
+      re += xs[n]*Math.cos(ang);
+      im += xs[n]*Math.sin(ang);
+    }
+    re*=dt; im*=dt;
+    freqs[k]=f;
+    mag[k]=Math.hypot(re,im);
+    phase[k]= mag[k] < 1e-4 ? 0 : Math.atan2(im,re)*180/Math.PI;
+  }
+  return {freqs, mag, phase, halfSpan};
+}
+
+function halfPowerBandwidth(freqs, mag){
+  const peak = mag[0];
+  if(peak < 1e-6) return 0;
+  const thresh = peak/Math.SQRT2;
+  for(let i=1;i<mag.length;i++){
+    if(mag[i] <= thresh){
+      const f0=freqs[i-1], f1=freqs[i], m0=mag[i-1], m1=mag[i];
+      const t = (m0-thresh)/(m0-m1 || 1e-9);
+      return f0 + t*(f1-f0);
+    }
+  }
+  return freqs[freqs.length-1];
+}
+
+function characteristicWidth(s){
+  switch(s.preset){
+    case 'rect': return {label:'τ', value:s.tau};
+    case 'tri': return {label:'τ', value:s.tau};
+    case 'exp': return {label:'1/a', value:1/s.a};
+    case 'gauss': return {label:'σ', value:s.sigma};
+    case 'sinc': return {label:'1/(2W)', value:1/(2*s.W)};
+  }
+}
+
+// ---------- canvas helpers ----------
+function setupCanvas(canvas){
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  const h = canvas.height;
+  canvas.width = rect.width*dpr;
+  canvas.height = h*dpr;
+  canvas.style.height = h+'px';
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {ctx, w: rect.width, h};
+}
+
+function drawGrid(ctx,w,h,pad){
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 1;
+  const rows=4, cols=8;
+  for(let i=0;i<=rows;i++){
+    const y = pad.t + (h-pad.t-pad.b)*i/rows;
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(w-pad.r,y); ctx.stroke();
+  }
+  for(let i=0;i<=cols;i++){
+    const x = pad.l + (w-pad.l-pad.r)*i/cols;
+    ctx.beginPath(); ctx.moveTo(x,pad.t); ctx.lineTo(x,h-pad.b); ctx.stroke();
+  }
+  ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+  ctx.beginPath(); ctx.moveTo(pad.l,h-pad.b); ctx.lineTo(w-pad.r,h-pad.b); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pad.l,pad.t); ctx.lineTo(pad.l,h-pad.b); ctx.stroke();
+}
+
+function drawTime(spec){
+  const canvas = document.getElementById('cvTime');
+  const {ctx,w,h} = setupCanvas(canvas);
+  const pad = {l:38,r:14,t:10,b:22};
+  ctx.clearRect(0,0,w,h);
+  drawGrid(ctx,w,h,pad);
+
+  const halfSpan = spec.halfSpan;
+  const Nplot = 500;
+  const pts = [];
+  let ymax = 0.001;
+  for(let i=0;i<=Nplot;i++){
+    const t = -halfSpan + 2*halfSpan*i/Nplot;
+    const y = xOfT(t,state);
+    pts.push(y);
+    if(Math.abs(y)>ymax) ymax = Math.abs(y);
+  }
+  ymax = ymax*1.2;
+  const plotH = h-pad.t-pad.b, plotW = w-pad.l-pad.r;
+  const yToPx = (y)=> pad.t + plotH*(0.5 - y/(2*ymax));
+  const xToPx = (i)=> pad.l + plotW*i/Nplot;
+
+  ctx.strokeStyle='rgba(255,255,255,0.28)';
+  ctx.beginPath(); ctx.moveTo(pad.l,yToPx(0)); ctx.lineTo(w-pad.r,yToPx(0)); ctx.stroke();
+  // t=0 marker
+  const zeroIdx = Nplot*(halfSpan/(2*halfSpan));
+  ctx.strokeStyle='rgba(255,255,255,0.16)';
+  ctx.beginPath(); ctx.moveTo(xToPx(zeroIdx),pad.t); ctx.lineTo(xToPx(zeroIdx),h-pad.b); ctx.stroke();
+
+  ctx.strokeStyle = '#3987e5';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  pts.forEach((y,i)=>{
+    const x = xToPx(i);
+    const py = yToPx(y);
+    if(i===0) ctx.moveTo(x,py); else ctx.lineTo(x,py);
+  });
+  ctx.stroke();
+
+  ctx.fillStyle = '#6b8199';
+  ctx.font = '11px monospace';
+  ctx.textAlign='left';
+  ctx.fillText((-halfSpan).toFixed(2)+' s', pad.l-2, h-6);
+  ctx.textAlign='right';
+  ctx.fillText((halfSpan).toFixed(2)+' s', w-pad.r, h-6);
+  ctx.textAlign='center';
+  ctx.fillText('0', xToPx(zeroIdx), h-6);
+  ctx.textAlign='left';
+  ctx.fillText('+'+ymax.toFixed(2), 2, pad.t+8);
+  ctx.fillText('−'+ymax.toFixed(2), 2, h-pad.b-2);
+
+  document.getElementById('t-info').textContent = 'pulso único (no periódico)';
+}
+
+function drawMag(spec){
+  const canvas = document.getElementById('cvMag');
+  const {ctx,w,h} = setupCanvas(canvas);
+  const pad = {l:42,r:14,t:14,b:24};
+  ctx.clearRect(0,0,w,h);
+  drawGrid(ctx,w,h,pad);
+
+  const plotH = h-pad.t-pad.b, plotW = w-pad.l-pad.r;
+  const maxMag = Math.max(0.05, ...spec.mag);
+  const n = spec.freqs.length;
+  const xToPx = (i)=> pad.l + plotW*i/(n-1);
+  const yToPx = (m)=> h-pad.b - plotH*(m/maxMag)*0.92;
+
+  ctx.strokeStyle = '#3987e5';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  spec.mag.forEach((m,i)=>{
+    const x=xToPx(i), y=yToPx(m);
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+  ctx.lineTo(xToPx(n-1), h-pad.b); ctx.lineTo(xToPx(0), h-pad.b); ctx.closePath();
+  ctx.fillStyle='rgba(57,135,229,0.10)'; ctx.fill();
+
+  // half-power bandwidth marker
+  const bw = halfPowerBandwidth(spec.freqs, spec.mag);
+  const bwIdx = bw/spec.freqs[n-1]*(n-1);
+  ctx.strokeStyle='rgba(230,103,103,0.55)';
+  ctx.setLineDash([4,3]);
+  ctx.beginPath(); ctx.moveTo(xToPx(bwIdx),pad.t); ctx.lineTo(xToPx(bwIdx),h-pad.b); ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = '#6b8199';
+  ctx.font = '11px monospace';
+  ctx.textAlign='left';
+  ctx.fillText('0', pad.l-2, h-6);
+  ctx.textAlign='right';
+  ctx.fillText(spec.freqs[n-1].toFixed(1)+' Hz', w-pad.r, h-6);
+  ctx.fillStyle='#ff9d9d';
+  ctx.textAlign='center';
+  ctx.fillText('BW ½P', xToPx(bwIdx), pad.t+10);
+
+  document.getElementById('f-info').textContent = 'curva continua (no líneas discretas)';
+}
+
+function drawPhase(spec){
+  const canvas = document.getElementById('cvPhase');
+  const {ctx,w,h} = setupCanvas(canvas);
+  const pad = {l:42,r:14,t:10,b:20};
+  ctx.clearRect(0,0,w,h);
+  drawGrid(ctx,w,h,pad);
+  const plotH = h-pad.t-pad.b, plotW = w-pad.l-pad.r;
+  const n = spec.freqs.length;
+  const xToPx = (i)=> pad.l + plotW*i/(n-1);
+  const yToPx = (deg)=> pad.t + plotH*(0.5 - deg/360);
+  ctx.strokeStyle='rgba(255,255,255,0.28)';
+  ctx.beginPath(); ctx.moveTo(pad.l,yToPx(0)); ctx.lineTo(w-pad.r,yToPx(0)); ctx.stroke();
+  ctx.strokeStyle = '#9085e9';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  spec.phase.forEach((p,i)=>{
+    const x=xToPx(i), y=yToPx(p);
+    if(i===0 || spec.mag[i]<1e-4) { }
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+  ctx.fillStyle = '#6b8199';
+  ctx.font = '11px monospace';
+  ctx.textAlign='left';
+  ctx.fillText('+180°', 2, pad.t+8);
+  ctx.fillText('−180°', 2, h-pad.b-2);
+}
+
+function render(){
+  updateFieldVisibility();
+  syncLabels();
+  const spec = computeSpectrum(state);
+  drawTime(spec);
+  drawMag(spec);
+  document.getElementById('phaseBox').style.display = state.showPhase ? 'block' : 'none';
+  if(state.showPhase) drawPhase(spec);
+
+  const bw = halfPowerBandwidth(spec.freqs, spec.mag);
+  const cw = characteristicWidth(state);
+  document.getElementById('readout').innerHTML =
+    '<span>Duración característica ('+cw.label+'): <b>'+cw.value.toFixed(3)+' s</b></span>'+
+    '<span>Ancho de banda (mitad de potencia): <b>'+bw.toFixed(2)+' Hz</b></span>'+
+    '<span>Producto duración×ancho de banda: <b>'+(cw.value*bw).toFixed(3)+'</b></span>';
+}
+
+// ---------- wiring ----------
+Object.keys(els).forEach(key=>{
+  const el = els[key];
+  if(!el) return;
+  const evt = (el.tagName==='SELECT') ? 'change' : 'input';
+  el.addEventListener(evt, ()=>{
+    if(el.type==='checkbox'){ state[key]=el.checked; }
+    else if(el.tagName==='SELECT'){ state[key]=el.value; }
+    else { state[key]=parseFloat(el.value); }
+    render();
+  });
+});
+
+window.addEventListener('resize', render);
+
+// ---------- exercises ----------
+const exercises = [
+  {
+    q: 'Calcula (o razona) la Transformada de Fourier de un pulso rectangular de amplitud 1 y duración τ centrado en t=0. ¿Qué le ocurre al ancho del lóbulo principal del espectro si τ disminuye?',
+    a: '<i>X</i>(<i>f</i>) = τ·sinc(<i>f</i>τ), con sinc(<i>u</i>)=sin(π<i>u</i>)/(π<i>u</i>). El primer cruce por cero está en <i>f</i>=1/τ: al disminuir τ (pulso más corto), el lóbulo principal del espectro se ensancha proporcionalmente. Es la manifestación directa del principio de incertidumbre tiempo-frecuencia: Δ<i>t</i>·Δ<i>f</i> ≈ constante. Puedes comprobarlo en la herramienta reduciendo τ y viendo cómo se ensancha |X(f)|.'
+  },
+  {
+    q: 'Sin calcular ninguna integral, indica cómo cambia el espectro |X(f)| de una señal x(t) si la retrasamos en el tiempo, obteniendo y(t)=x(t−t₀). Verifícalo en la herramienta moviendo t₀.',
+    a: 'La propiedad de desplazamiento temporal dice Y(f)=X(f)·e<sup>−j2πft₀</sup>. La <b>magnitud</b> |Y(f)|=|X(f)| no cambia — el módulo de ese exponencial complejo es 1 — solo cambia la <b>fase</b>, que adquiere una pendiente lineal −2πf t₀. Es justo lo que se observa en la herramienta: al mover t₀ el espectro de magnitud permanece idéntico y el de fase se inclina.'
+  },
+  {
+    q: 'Verdadero o falso: "Una señal de duración finita en el tiempo puede tener también un espectro de duración finita en frecuencia (banda limitada)." Razona la respuesta.',
+    a: '<b>Falso</b> (salvo el caso trivial x(t)=0). Una señal estrictamente limitada en el tiempo no puede ser también estrictamente limitada en banda, y viceversa — consecuencia del principio de incertidumbre tiempo-frecuencia. El pulso rectangular es el ejemplo clásico: dura un tiempo finito τ, pero su transformada (un sinc) se extiende, en teoría, hasta el infinito en frecuencia. El único caso "extremo" alcanzable es el pulso gaussiano, que minimiza el producto duración×ancho de banda sin llegar a anularlo.'
+  },
+  {
+    q: 'Usando la propiedad de convolución, explica por qué "filtrar" una señal (pasarla por un sistema LTI) equivale a multiplicar su espectro por la respuesta en frecuencia del filtro.',
+    a: 'La salida de un sistema LTI es la convolución de la entrada con la respuesta al impulso: y(t)=x(t)*h(t). Por la propiedad de convolución de la Transformada de Fourier, esto equivale en frecuencia a Y(f)=X(f)·H(f): la convolución en el tiempo se convierte en una simple multiplicación en frecuencia. Por eso diseñar un filtro es, esencialmente, diseñar la forma de H(f) que deja pasar o atenúa cada banda de frecuencias.'
+  },
+  {
+    q: 'Aplica el Teorema de Parseval para justificar por qué tiene sentido hablar de "densidad espectral de energía" |X(f)|².',
+    a: 'Parseval establece que ∫|x(t)|²dt = ∫|X(f)|²df: la energía total de la señal, calculada en el tiempo, es igual a la integral de |X(f)|² en frecuencia. Esto permite interpretar |X(f)|² como la energía "por unidad de frecuencia" — de ahí el nombre densidad espectral de energía — y determinar en qué bandas de frecuencia se concentra la energía de una señal, algo esencial al diseñar filtros o evaluar ancho de banda necesario.'
+  }
+];
+
+const listEl = document.getElementById('exerciseList');
+exercises.forEach((ex,i)=>{
+  const div = document.createElement('div');
+  div.className='exercise';
+  div.innerHTML = `
+    <div class="ex-num">Ejercicio ${i+1}</div>
+    <p class="ex-q">${ex.q}</p>
+    <button class="ex-btn" type="button">Ver solución</button>
+    <div class="ex-answer">${ex.a}</div>
+  `;
+  const btn = div.querySelector('.ex-btn');
+  const ans = div.querySelector('.ex-answer');
+  btn.addEventListener('click', ()=>{
+    const showing = ans.classList.toggle('show');
+    btn.textContent = showing ? 'Ocultar solución' : 'Ver solución';
+  });
+  listEl.appendChild(div);
+});
+
+updateFieldVisibility();
+syncLabels();
+render();
+</script>
+</body>
+</html>
