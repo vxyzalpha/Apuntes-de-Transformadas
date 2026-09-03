@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La Serie de Fourier — Electrónica e Instrumentación</title>
+<style>
+  :root{
+    --bg:#0a1628;
+    --bg-plane:#081120;
+    --surface:#0f2038;
+    --surface-2:#13294a;
+    --grid-line:#1e3a5f;
+    --border:rgba(255,255,255,0.10);
+    --border-strong:rgba(255,255,255,0.18);
+    --text-primary:#f0f4f8;
+    --text-secondary:#9fb3c8;
+    --text-muted:#6b8199;
+    --blue:#3987e5;
+    --orange:#d95926;
+    --aqua:#199e70;
+    --yellow:#c98500;
+    --magenta:#d55181;
+    --violet:#9085e9;
+    --red:#e66767;
+    --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg-plane);
+    color:var(--text-primary);
+    font-family:var(--sans);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1040px;margin:0 auto;padding:0 20px 80px;}
+  a{color:var(--blue);}
+
+  /* Hero / blueprint header */
+  .hero{
+    position:relative;
+    background:
+      repeating-linear-gradient(0deg, var(--grid-line) 0 1px, transparent 1px 32px),
+      repeating-linear-gradient(90deg, var(--grid-line) 0 1px, transparent 1px 32px),
+      linear-gradient(180deg, var(--bg) 0%, var(--bg-plane) 100%);
+    border-bottom:1px solid var(--border);
+    padding:42px 20px 30px;
+    margin-bottom:34px;
+  }
+  .hero:before{
+    content:"";
+    position:absolute; inset:0;
+    background:
+      repeating-linear-gradient(0deg, rgba(63,135,229,0.10) 0 1px, transparent 1px 32px),
+      repeating-linear-gradient(90deg, rgba(63,135,229,0.10) 0 1px, transparent 1px 32px);
+    pointer-events:none;
+  }
+  .hero-inner{max-width:1000px;margin:0 auto;position:relative;}
+  .eyebrow{
+    display:inline-block;
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--blue);
+    background:rgba(57,135,229,0.12);
+    border:1px solid rgba(57,135,229,0.35);
+    padding:4px 10px;
+    border-radius:4px;
+    margin-bottom:16px;
+  }
+  h1{
+    font-size:clamp(28px,4vw,40px);
+    margin:0 0 10px;
+    letter-spacing:-0.01em;
+  }
+  .subtitle{
+    color:var(--text-secondary);
+    font-size:17px;
+    max-width:660px;
+    margin:0;
+  }
+  .pagenav{
+    margin-top:16px;
+    font-family:var(--mono);
+    font-size:13px;
+  }
+  .pagenav a{color:#8fbcf5; text-decoration:none; border-bottom:1px dashed rgba(143,188,245,0.4);}
+  .pagenav a:hover{border-bottom-style:solid;}
+
+  h2{
+    font-size:22px;
+    margin:0 0 4px;
+    letter-spacing:-0.005em;
+  }
+  .section-label{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.09em;
+    text-transform:uppercase;
+    color:var(--text-muted);
+    margin-bottom:6px;
+  }
+  section{margin-bottom:46px;}
+  .lede{color:var(--text-secondary); max-width:760px;}
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:24px;
+  }
+
+  /* Controls */
+  .controls{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:16px 24px;
+    margin-bottom:22px;
+    padding-bottom:20px;
+    border-bottom:1px dashed var(--border);
+  }
+  .field label{
+    display:flex;
+    justify-content:space-between;
+    font-size:12.5px;
+    color:var(--text-secondary);
+    margin-bottom:6px;
+    font-family:var(--mono);
+  }
+  .field label .val{color:var(--text-primary); font-weight:600;}
+  select, input[type=range]{width:100%;}
+  select{
+    background:var(--surface-2);
+    color:var(--text-primary);
+    border:1px solid var(--border-strong);
+    border-radius:6px;
+    padding:8px 10px;
+    font-family:var(--sans);
+    font-size:14px;
+  }
+  input[type=range]{
+    -webkit-appearance:none;
+    height:4px;
+    border-radius:2px;
+    background:var(--grid-line);
+    outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:15px;height:15px;border-radius:50%;
+    background:var(--blue);
+    border:2px solid #cfe0fb;
+    cursor:pointer;
+    margin-top:-6px;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:13px;height:13px;border-radius:50%;
+    background:var(--blue); border:2px solid #cfe0fb; cursor:pointer;
+  }
+  .field[data-hidden="1"]{display:none;}
+  .checkline{
+    display:flex; align-items:center; gap:8px;
+    font-size:13.5px; color:var(--text-secondary);
+    font-family:var(--mono);
+  }
+
+  /* Canvas panels */
+  .plots{display:grid; grid-template-columns:1fr; gap:18px;}
+  .plot-box{background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:14px 16px 10px;}
+  .plot-title{font-size:12.5px; color:var(--text-secondary); font-family:var(--mono); display:flex; justify-content:space-between; margin-bottom:6px;}
+  canvas{width:100%; display:block; border-radius:4px;}
+  .readout{
+    margin-top:10px;
+    font-family:var(--mono);
+    font-size:12.5px;
+    color:var(--text-muted);
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px 18px;
+  }
+  .readout b{color:var(--text-primary); font-weight:600;}
+
+  /* Tables */
+  table{width:100%; border-collapse:collapse; font-size:14.5px;}
+  thead th{
+    text-align:left;
+    font-family:var(--mono);
+    font-size:11.5px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--text-muted);
+    border-bottom:1px solid var(--border-strong);
+    padding:0 12px 10px;
+  }
+  tbody td{
+    padding:13px 12px;
+    border-bottom:1px solid var(--border);
+    vertical-align:middle;
+    color:var(--text-secondary);
+  }
+  tbody tr:last-child td{border-bottom:none;}
+  td.prop-name{color:var(--text-primary); font-weight:600; white-space:nowrap;}
+  .formula-box{
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:18px 20px;
+    margin-bottom:14px;
+  }
+  .formula-box .flabel{font-family:var(--mono); font-size:12px; color:var(--blue); margin-bottom:8px; text-transform:uppercase; letter-spacing:.06em;}
+  .formula-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px;}
+
+  /* Math typesetting (pure HTML/CSS — no external fonts or libraries required) */
+  .eq{
+    font-family:"Cambria Math","STIX Two Math",Georgia,"Times New Roman",serif;
+    font-size:17px;
+    color:var(--text-primary);
+    letter-spacing:.01em;
+  }
+  .eq + .eq{margin-top:10px;}
+  .eq i{font-style:italic;}
+  .eq sup, .eq sub{font-size:0.64em;}
+  .intlim, .sumlim{
+    display:inline-flex; flex-direction:column; align-items:center; justify-content:center;
+    font-size:1.5em; line-height:0.6; vertical-align:middle; margin:0 3px; position:relative; top:3px;
+  }
+  .intlim sup, .sumlim sup{font-size:0.32em; line-height:1; margin-bottom:1px;}
+  .intlim sub, .sumlim sub{font-size:0.32em; line-height:1; margin-top:1px;}
+  .frac{
+    display:inline-flex; flex-direction:column; vertical-align:middle;
+    text-align:center; margin:0 4px; line-height:1.15; font-size:0.92em; position:relative; top:2px;
+  }
+  .frac .n{padding:0 3px; border-bottom:1.3px solid currentColor;}
+  .frac .d{padding:1px 3px 0;}
+  table .eq{font-size:15px; color:var(--text-secondary);}
+
+  .callout{
+    background:rgba(63,135,229,0.08);
+    border:1px solid rgba(63,135,229,0.3);
+    border-radius:8px;
+    padding:16px 18px;
+    color:var(--text-secondary);
+    font-size:14.5px;
+    margin-top:16px;
+  }
+  .callout b{color:var(--text-primary);}
+
+  /* Exercises */
+  .exercise{
+    border:1px solid var(--border); border-radius:8px; background:var(--surface-2);
+    padding:18px 20px; margin-bottom:14px;
+  }
+  .exercise:last-child{margin-bottom:0;}
+  .ex-num{font-family:var(--mono); font-size:12px; color:var(--blue); margin-bottom:6px;}
+  .ex-q{color:var(--text-primary); margin:0 0 14px; font-size:15px;}
+  .ex-btn{
+    background:rgba(57,135,229,0.15); color:#8fbcf5; border:1px solid rgba(57,135,229,0.4);
+    border-radius:6px; padding:7px 14px; font-family:var(--mono); font-size:12.5px; cursor:pointer;
+  }
+  .ex-btn:hover{background:rgba(57,135,229,0.25);}
+  .ex-answer{
+    margin-top:14px; padding-top:14px; border-top:1px dashed var(--border);
+    color:var(--text-secondary); font-size:14.5px; display:none;
+  }
+  .ex-answer.show{display:block;}
+
+  footer{
+    margin-top:60px;
+    padding-top:20px;
+    border-top:1px solid var(--border);
+    color:var(--text-muted);
+    font-size:12.5px;
+    font-family:var(--mono);
+  }
+  @media (max-width:640px){
+    .hero{padding:32px 16px 24px;}
+    .card{padding:18px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-inner">
+    <span class="eyebrow">Electrónica e Instrumentación · UPM</span>
+    <h1>La Serie de Fourier</h1>
+    <p class="subtitle">Toda señal periódica es una suma de senoides a frecuencias múltiplo de una fundamental. Cómo encontrar esos armónicos, y qué forma tiene su espectro.</p>
+    <p class="pagenav">← <a href="index.html">Inicio</a> &nbsp;·&nbsp; Ver también: <a href="fourier-transform.html">la Transformada de Fourier</a> &nbsp;·&nbsp; <a href="nyquist.html">Nyquist-Shannon</a></p>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <section id="intuicion">
+    <div class="section-label">01 · Idea intuitiva</div>
+    <h2>Señales que se repiten, espectros de líneas</h2>
+    <p class="lede">
+      Cuando una señal <span style="color:var(--text-primary)">x(t)</span> es <b style="color:var(--text-primary)">periódica</b> — se repite exactamente cada <span style="color:var(--text-primary)">T₀</span> segundos, como una onda cuadrada de un generador de funciones o la corriente de red — su contenido en frecuencia no puede ser cualquier valor: solo puede aparecer en los múltiplos exactos de la <b style="color:var(--text-primary)">frecuencia fundamental</b> f₀=1/T₀. A esos múltiplos (f₀, 2f₀, 3f₀…) se les llama <b style="color:var(--text-primary)">armónicos</b>, y al peso complejo de cada uno, <span style="color:var(--text-primary)">c<sub>k</sub></span>.
+    </p>
+    <p class="lede">
+      Esto es justo lo que dice la <b style="color:var(--text-primary)">Serie de Fourier</b>: cualquier señal periódica (razonablemente bien comportada) puede escribirse como una suma — en general infinita — de esos armónicos. A diferencia de una señal no periódica, cuyo espectro es una función continua X(f) (ver la <a href="fourier-transform.html">página de la Transformada de Fourier</a>), el espectro de una señal periódica es un <b style="color:var(--text-primary)">conjunto discreto de líneas</b>, una por armónico, separadas exactamente f₀ Hz entre sí. Esa es la diferencia central que conviene tener clara antes de usar la herramienta de abajo.
+    </p>
+  </section>
+
+  <section id="explorador">
+    <div class="section-label">02 · Herramienta interactiva</div>
+    <h2>Señal periódica → espectro de líneas</h2>
+    <p class="lede">Elige una forma de onda periódica y ajusta sus parámetros. El panel inferior muestra la señal en el dominio del tiempo y, calculado numéricamente en directo, su espectro de líneas (magnitud y, opcionalmente, fase) en cada armónico k·f₀.</p>
+
+    <div class="card">
+      <div class="controls">
+        <div class="field">
+          <label>Forma de onda</label>
+          <select id="preset">
+            <option value="sine">Seno simple (1 solo armónico)</option>
+            <option value="twosines">Suma de dos armónicos</option>
+            <option value="square">Onda cuadrada</option>
+            <option value="sawtooth">Diente de sierra</option>
+            <option value="pulse">Tren de pulsos rectangulares</option>
+            <option value="noise">Seno + ruido</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Frecuencia fundamental f₀ <span class="val" id="v-f0">3.0 Hz</span></label>
+          <input type="range" id="f0" min="1" max="8" step="0.1" value="3">
+        </div>
+
+        <div class="field" data-p="twosines">
+          <label>Armónico 2º tono (k·f₀) <span class="val" id="v-k2">2</span></label>
+          <input type="range" id="k2" min="2" max="9" step="1" value="2">
+        </div>
+        <div class="field" data-p="twosines">
+          <label>Amplitud 2º tono <span class="val" id="v-amp2">0.60</span></label>
+          <input type="range" id="amp2" min="0" max="1" step="0.05" value="0.6">
+        </div>
+        <div class="field" data-p="twosines">
+          <label>Fase 2º tono <span class="val" id="v-phase2">0°</span></label>
+          <input type="range" id="phase2" min="0" max="360" step="5" value="0">
+        </div>
+
+        <div class="field" data-p="square,sawtooth">
+          <label>Nº de armónicos incluidos <span class="val" id="v-harm">7</span></label>
+          <input type="range" id="harmonics" min="1" max="15" step="1" value="7">
+        </div>
+
+        <div class="field" data-p="pulse">
+          <label>Ciclo de trabajo (duty) <span class="val" id="v-duty">25%</span></label>
+          <input type="range" id="duty" min="5" max="50" step="1" value="25">
+        </div>
+
+        <div class="field" data-p="noise">
+          <label>Nivel de ruido <span class="val" id="v-noise">0.15</span></label>
+          <input type="range" id="noiseLevel" min="0" max="0.6" step="0.02" value="0.15">
+        </div>
+
+        <div class="field">
+          <label style="margin-bottom:0;">&nbsp;</label>
+          <div class="checkline"><input type="checkbox" id="showPhase"> mostrar espectro de fase</div>
+        </div>
+      </div>
+
+      <div class="plots">
+        <div class="plot-box">
+          <div class="plot-title"><span>DOMINIO DEL TIEMPO — x(t)</span><span id="t-info"></span></div>
+          <canvas id="cvTime" height="180"></canvas>
+        </div>
+        <div class="plot-box">
+          <div class="plot-title"><span>DOMINIO DE LA FRECUENCIA — |c<sub>k</sub>| (espectro de líneas)</span><span id="f-info"></span></div>
+          <canvas id="cvMag" height="180"></canvas>
+        </div>
+        <div class="plot-box" id="phaseBox" style="display:none;">
+          <div class="plot-title"><span>ESPECTRO DE FASE — ∠c<sub>k</sub> (grados)</span></div>
+          <canvas id="cvPhase" height="120"></canvas>
+        </div>
+      </div>
+
+      <div class="readout" id="readout"></div>
+
+      <div class="callout" id="squareNote" style="display:none;">
+        <b>Fenómeno de Gibbs:</b> por muchos armónicos que añadas a la onda cuadrada o al diente de sierra, cerca del salto siempre aparece un pequeño rizado que sobrepasa el valor final en torno a un 9%. Más armónicos estrechan ese rizado hacia la discontinuidad, pero no lo eliminan.
+      </div>
+    </div>
+  </section>
+
+  <section id="formulas">
+    <div class="section-label">03 · Fórmulas de la Serie de Fourier</div>
+    <h2>Síntesis y análisis</h2>
+    <div class="formula-grid">
+      <div class="formula-box">
+        <div class="flabel">Síntesis (forma exponencial compleja)</div>
+        <div class="eq">
+          <i>x</i>(<i>t</i>) = <span class="sumlim">Σ<sup>∞</sup><sub><i>k</i>=−∞</sub></span> <i>c</i><sub><i>k</i></sub>&thinsp;<i>e</i><sup><i>j</i>2π<i>kf</i>₀<i>t</i></sup>
+        </div>
+      </div>
+      <div class="formula-box">
+        <div class="flabel">Análisis (coeficientes)</div>
+        <div class="eq">
+          <i>c</i><sub><i>k</i></sub> = <span class="frac"><span class="n">1</span><span class="d"><i>T</i>₀</span></span><span class="intlim">∫<sub><i>T</i>₀</sub></span> <i>x</i>(<i>t</i>)&thinsp;<i>e</i><sup>−<i>j</i>2π<i>kf</i>₀<i>t</i></sup>&thinsp;d<i>t</i>
+        </div>
+      </div>
+      <div class="formula-box">
+        <div class="flabel">Frecuencia fundamental / periodo</div>
+        <div class="eq"><i>f</i>₀ = <span class="frac"><span class="n">1</span><span class="d"><i>T</i>₀</span></span> &nbsp;&nbsp;·&nbsp;&nbsp; armónico&nbsp;<i>k</i> → frecuencia <i>k</i>·<i>f</i>₀</div>
+      </div>
+      <div class="formula-box">
+        <div class="flabel">Parseval (potencia media de una señal periódica)</div>
+        <div class="eq">
+          <span class="frac"><span class="n">1</span><span class="d"><i>T</i>₀</span></span><span class="intlim">∫<sub><i>T</i>₀</sub></span>|<i>x</i>(<i>t</i>)|²&thinsp;d<i>t</i> &nbsp;=&nbsp; <span class="sumlim">Σ<sup>∞</sup><sub><i>k</i>=−∞</sub></span> |<i>c</i><sub><i>k</i></sub>|²
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="propiedades">
+    <div class="section-label">04 · Propiedades</div>
+    <h2>Propiedades de los coeficientes c<sub>k</sub></h2>
+    <div class="card" style="overflow-x:auto;">
+      <table id="propTable">
+        <thead>
+          <tr><th>Propiedad</th><th>Señal x(t)</th><th>Coeficientes</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="prop-name">Linealidad</td><td class="eq"><i>a</i>&thinsp;<i>x</i>(<i>t</i>) + <i>b</i>&thinsp;<i>y</i>(<i>t</i>)</td><td class="eq"><i>a</i>&thinsp;<i>c</i><sub><i>k</i></sub> + <i>b</i>&thinsp;<i>d</i><sub><i>k</i></sub></td></tr>
+          <tr><td class="prop-name">Desplazamiento temporal</td><td class="eq"><i>x</i>(<i>t</i>−<i>t</i>₀)</td><td class="eq"><i>c</i><sub><i>k</i></sub>&thinsp;<i>e</i><sup>−<i>j</i>2π<i>kf</i>₀<i>t</i>₀</sup></td></tr>
+          <tr><td class="prop-name">Modulación por un armónico</td><td class="eq"><i>x</i>(<i>t</i>)&thinsp;<i>e</i><sup><i>j</i>2π<i>mf</i>₀<i>t</i></sup></td><td class="eq"><i>c</i><sub><i>k</i>−<i>m</i></sub></td></tr>
+          <tr><td class="prop-name">Escalado temporal (cambia T₀)</td><td class="eq"><i>x</i>(<i>at</i>), periodo <i>T</i>₀/<i>a</i></td><td class="eq"><i>c</i><sub><i>k</i></sub> (mismos pesos, líneas más separadas)</td></tr>
+          <tr><td class="prop-name">Simetría hermítica (x real)</td><td class="eq"><i>x</i>(<i>t</i>) ∈ ℝ</td><td class="eq"><i>c</i><sub>−<i>k</i></sub> = <i>c</i><sub><i>k</i></sub>*</td></tr>
+          <tr><td class="prop-name">x(t) par</td><td class="eq"><i>x</i>(<i>t</i>) = <i>x</i>(−<i>t</i>)</td><td class="eq"><i>c</i><sub><i>k</i></sub> real (solo cosenos)</td></tr>
+          <tr><td class="prop-name">x(t) impar</td><td class="eq"><i>x</i>(<i>t</i>) = −<i>x</i>(−<i>t</i>)</td><td class="eq"><i>c</i><sub><i>k</i></sub> imaginario puro (solo senos)</td></tr>
+          <tr><td class="prop-name">Parseval (potencia)</td><td class="eq"><span class="frac"><span class="n">1</span><span class="d"><i>T</i>₀</span></span><span class="intlim">∫<sub><i>T</i>₀</sub></span>|<i>x</i>(<i>t</i>)|²d<i>t</i></td><td class="eq"><span class="sumlim">Σ<sup>∞</sup><sub><i>k</i>=−∞</sub></span>|<i>c</i><sub><i>k</i></sub>|²</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="ejercicios">
+    <div class="section-label">05 · Ejercicios</div>
+    <h2>Comprueba lo aprendido</h2>
+    <div id="exerciseList"></div>
+  </section>
+
+  <footer>
+    Electrónica e Instrumentación · Material de apoyo interactivo — generado con Claude.
+  </footer>
+</div>
+
+<script>
+// ---------- state ----------
+const state = {
+  preset: 'sine',
+  f0: 3,
+  k2: 2, amp2: 0.6, phase2: 0,
+  harmonics: 7,
+  duty: 25,
+  noiseLevel: 0.15,
+  showPhase: false
+};
+
+const els = {
+  preset: document.getElementById('preset'),
+  f0: document.getElementById('f0'),
+  k2: document.getElementById('k2'),
+  amp2: document.getElementById('amp2'),
+  phase2: document.getElementById('phase2'),
+  harmonics: document.getElementById('harmonics'),
+  duty: document.getElementById('duty'),
+  noiseLevel: document.getElementById('noiseLevel'),
+  showPhase: document.getElementById('showPhase'),
+};
+
+function updateFieldVisibility(){
+  document.querySelectorAll('.field[data-p]').forEach(f=>{
+    const list = f.dataset.p.split(',');
+    f.setAttribute('data-hidden', list.includes(state.preset) ? '0' : '1');
+  });
+  document.getElementById('squareNote').style.display =
+    (state.preset==='square' || state.preset==='sawtooth') ? 'block' : 'none';
+}
+
+function syncLabels(){
+  document.getElementById('v-f0').textContent = state.f0.toFixed(1)+' Hz';
+  document.getElementById('v-k2').textContent = state.k2;
+  document.getElementById('v-amp2').textContent = state.amp2.toFixed(2);
+  document.getElementById('v-phase2').textContent = state.phase2+'°';
+  document.getElementById('v-harm').textContent = state.harmonics;
+  document.getElementById('v-duty').textContent = state.duty+'%';
+  document.getElementById('v-noise').textContent = state.noiseLevel.toFixed(2);
+}
+
+// ---------- signal definition (all presets are periodic, period 1/f0) ----------
+function xOfT(t, s){
+  const w0 = 2*Math.PI*s.f0;
+  switch(s.preset){
+    case 'sine':
+      return Math.sin(w0*t);
+    case 'twosines':
+      return Math.sin(w0*t) + s.amp2*Math.sin(s.k2*w0*t + s.phase2*Math.PI/180);
+    case 'square': {
+      let sum=0;
+      for(let n=0;n<s.harmonics;n++){
+        const k = 2*n+1;
+        sum += (4/(Math.PI*k))*Math.sin(k*w0*t);
+      }
+      return sum;
+    }
+    case 'sawtooth': {
+      let sum=0;
+      for(let k=1;k<=s.harmonics;k++){
+        sum += (2/(Math.PI*k))*Math.pow(-1,k+1)*Math.sin(k*w0*t);
+      }
+      return sum;
+    }
+    case 'pulse': {
+      const T0 = 1/s.f0;
+      const d = s.duty/100;
+      let tm = t % T0; if(tm<0) tm+=T0;
+      return (tm < d*T0) ? 1 : 0;
+    }
+    case 'noise':
+      return Math.sin(w0*t) + s.noiseLevel*(Math.random()*2-1);
+    default: return 0;
+  }
+}
+
+// ---------- spectrum (harmonic DFT over exactly one fundamental period => discrete c_k) ----------
+function computeSpectrum(s, maxHarm=24, N=512){
+  const T0 = 1/s.f0;
+  const dt = T0/N;
+  const x = new Array(N);
+  for(let n=0;n<N;n++) x[n] = xOfT(n*dt, s);
+
+  const mag = new Array(maxHarm+1).fill(0);
+  const phase = new Array(maxHarm+1).fill(0);
+  for(let k=0;k<=maxHarm;k++){
+    let re=0, im=0;
+    for(let n=0;n<N;n++){
+      const ang = -2*Math.PI*k*n/N;
+      re += x[n]*Math.cos(ang);
+      im += x[n]*Math.sin(ang);
+    }
+    re/=N; im/=N;
+    const m = Math.hypot(re,im);
+    mag[k] = (k===0) ? m : 2*m;
+    phase[k] = (m < 1e-4) ? 0 : Math.atan2(im,re)*180/Math.PI;
+  }
+  return {mag, phase, maxHarm};
+}
+
+// ---------- canvas helpers ----------
+function setupCanvas(canvas){
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  const h = canvas.height;
+  canvas.width = rect.width*dpr;
+  canvas.height = h*dpr;
+  canvas.style.height = h+'px';
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {ctx, w: rect.width, h};
+}
+
+// ---------- fixed axis scales ----------
+// Los ejes de ordenadas NO se recalculan a partir de la señal mostrada en
+// cada fotograma (eso "normaliza" siempre la curva a la misma altura visual
+// y esconde el efecto real de mover un slider). En su lugar usamos una
+// escala fija por forma de onda, calculada a partir del rango máximo que
+// puede alcanzar esa magnitud dentro de los límites de sus sliders. La
+// escala solo cambia al elegir otra forma de onda en el desplegable, nunca
+// al mover un slider de esa misma forma de onda.
+const FIXED_TIME_MAX = {
+  sine: 1.3,
+  twosines: 2.3, // amplitud máx. 1 + amp2 (amp2 ∈ [0,1])
+  square: 1.4,   // sobreoscilación de Gibbs (~9%) sobre amplitud 1
+  sawtooth: 1.4,
+  pulse: 1.3,
+  noise: 1.9     // amplitud 1 + nivel de ruido máx. 0.6
+};
+const FIXED_MAG_MAX = {
+  sine: 1.3,
+  twosines: 1.3,  // máx(1, amp2) con amp2 ∈ [0,1]
+  square: 1.4,    // c1 = 4/π ≈ 1.273
+  sawtooth: 0.75, // c1 = 2/π ≈ 0.637
+  pulse: 0.6,     // c0 = duty, duty ∈ [5%,50%] → máx. 0.5
+  noise: 1.3
+};
+function fixedTimeMax(preset){ return FIXED_TIME_MAX[preset] || 1.3; }
+function fixedMagMax(preset){ return FIXED_MAG_MAX[preset] || 1.3; }
+
+function drawGrid(ctx,w,h,pad){
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 1;
+  const rows=4, cols=8;
+  for(let i=0;i<=rows;i++){
+    const y = pad.t + (h-pad.t-pad.b)*i/rows;
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(w-pad.r,y); ctx.stroke();
+  }
+  for(let i=0;i<=cols;i++){
+    const x = pad.l + (w-pad.l-pad.r)*i/cols;
+    ctx.beginPath(); ctx.moveTo(x,pad.t); ctx.lineTo(x,h-pad.b); ctx.stroke();
+  }
+  ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+  ctx.beginPath(); ctx.moveTo(pad.l,h-pad.b); ctx.lineTo(w-pad.r,h-pad.b); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pad.l,pad.t); ctx.lineTo(pad.l,h-pad.b); ctx.stroke();
+}
+
+function drawTime(){
+  const canvas = document.getElementById('cvTime');
+  const {ctx,w,h} = setupCanvas(canvas);
+  const pad = {l:38,r:14,t:10,b:22};
+  ctx.clearRect(0,0,w,h);
+  drawGrid(ctx,w,h,pad);
+
+  const periods = 4;
+  const duration = periods/state.f0;
+  const Nplot = 500;
+  const pts = [];
+  for(let i=0;i<=Nplot;i++){
+    const t = duration*i/Nplot;
+    pts.push(xOfT(t,state));
+  }
+  const ymax = fixedTimeMax(state.preset); // eje fijo: no depende de la señal mostrada
+  const plotH = h-pad.t-pad.b, plotW = w-pad.l-pad.r;
+  const yToPx = (y)=> pad.t + plotH*(0.5 - y/(2*ymax));
+
+  ctx.strokeStyle='rgba(255,255,255,0.28)';
+  ctx.beginPath(); ctx.moveTo(pad.l,yToPx(0)); ctx.lineTo(w-pad.r,yToPx(0)); ctx.stroke();
+
+  ctx.strokeStyle = '#3987e5';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  pts.forEach((y,i)=>{
+    const x = pad.l + plotW*i/Nplot;
+    const py = yToPx(y);
+    if(i===0) ctx.moveTo(x,py); else ctx.lineTo(x,py);
+  });
+  ctx.stroke();
+
+  ctx.fillStyle = '#6b8199';
+  ctx.font = '11px monospace';
+  ctx.textAlign='left';
+  ctx.fillText('0', pad.l-2, h-6);
+  ctx.textAlign='right';
+  ctx.fillText(duration.toFixed(2)+' s', w-pad.r, h-6);
+  ctx.textAlign='left';
+  ctx.fillText('+'+ymax.toFixed(2), 2, pad.t+8);
+  ctx.fillText('−'+ymax.toFixed(2), 2, h-pad.b-2);
+
+  document.getElementById('t-info').textContent = 'T₀ = '+(1/state.f0).toFixed(3)+' s · '+periods+' periodos mostrados';
+}
+
+function drawMag(spec){
+  const canvas = document.getElementById('cvMag');
+  const {ctx,w,h} = setupCanvas(canvas);
+  const pad = {l:38,r:14,t:14,b:24};
+  ctx.clearRect(0,0,w,h);
+  drawGrid(ctx,w,h,pad);
+
+  const plotH = h-pad.t-pad.b, plotW = w-pad.l-pad.r;
+  const maxMag = fixedMagMax(state.preset); // eje fijo: no depende de la señal mostrada
+  const n = spec.maxHarm;
+
+  for(let k=0;k<=n;k++){
+    const x = pad.l + plotW*(k/(n+0.4));
+    const barH = plotH*(spec.mag[k]/maxMag)*0.92;
+    const y0 = h-pad.b;
+    const y1 = y0-barH;
+    ctx.strokeStyle = (k===0) ? '#6b8199' : '#3987e5';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(x,y0); ctx.lineTo(x,y1); ctx.stroke();
+    ctx.beginPath();
+    ctx.fillStyle = (k===0) ? '#6b8199' : '#3987e5';
+    ctx.arc(x,y1,3.4,0,Math.PI*2);
+    ctx.fill();
+  }
+
+  ctx.fillStyle = '#6b8199';
+  ctx.font = '11px monospace';
+  ctx.textAlign='left';
+  ctx.fillText('0', pad.l-2, h-6);
+  ctx.textAlign='right';
+  ctx.fillText((n*state.f0).toFixed(0)+' Hz', w-pad.r, h-6);
+  ctx.textAlign='center';
+  ctx.fillText('f₀='+state.f0.toFixed(1)+' Hz  →', pad.l + plotW*(1/(n+0.4)), pad.t+10);
+
+  document.getElementById('f-info').textContent = 'líneas cada f₀, hasta '+n+'·f₀';
+}
+
+function drawPhase(spec){
+  const canvas = document.getElementById('cvPhase');
+  const {ctx,w,h} = setupCanvas(canvas);
+  const pad = {l:38,r:14,t:10,b:20};
+  ctx.clearRect(0,0,w,h);
+  drawGrid(ctx,w,h,pad);
+  const plotH = h-pad.t-pad.b, plotW = w-pad.l-pad.r;
+  const n = spec.maxHarm;
+  const yToPx = (deg)=> pad.t + plotH*(0.5 - deg/360);
+  ctx.strokeStyle='rgba(255,255,255,0.28)';
+  ctx.beginPath(); ctx.moveTo(pad.l,yToPx(0)); ctx.lineTo(w-pad.r,yToPx(0)); ctx.stroke();
+  for(let k=0;k<=n;k++){
+    if(Math.abs(spec.mag[k])<1e-3) continue;
+    const x = pad.l + plotW*(k/(n+0.4));
+    const y = yToPx(spec.phase[k]);
+    ctx.strokeStyle = '#9085e9';
+    ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(x,yToPx(0)); ctx.lineTo(x,y); ctx.stroke();
+    ctx.fillStyle='#9085e9';
+    ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill();
+  }
+  ctx.fillStyle = '#6b8199';
+  ctx.font = '11px monospace';
+  ctx.textAlign='left';
+  ctx.fillText('+180°', 2, pad.t+8);
+  ctx.fillText('−180°', 2, h-pad.b-2);
+}
+
+function render(){
+  updateFieldVisibility();
+  syncLabels();
+  drawTime();
+  const spec = computeSpectrum(state);
+  drawMag(spec);
+  document.getElementById('phaseBox').style.display = state.showPhase ? 'block' : 'none';
+  if(state.showPhase) drawPhase(spec);
+
+  const peakK = spec.mag.slice(1).reduce((best,m,i)=> m>spec.mag[best+1]? i : best, 0)+1;
+  document.getElementById('readout').innerHTML =
+    '<span>f₀ = <b>'+state.f0.toFixed(1)+' Hz</b></span>'+
+    '<span>Armónico principal: <b>k='+peakK+'</b> ('+(peakK*state.f0).toFixed(1)+' Hz)</span>'+
+    '<span>Coeficiente DC (k=0): <b>'+spec.mag[0].toFixed(3)+'</b></span>';
+}
+
+// ---------- wiring ----------
+Object.keys(els).forEach(key=>{
+  const el = els[key];
+  if(!el) return;
+  const evt = (el.tagName==='SELECT') ? 'change' : 'input';
+  el.addEventListener(evt, ()=>{
+    if(el.type==='checkbox'){ state[key]=el.checked; }
+    else if(el.tagName==='SELECT'){ state[key]=el.value; }
+    else { state[key]=parseFloat(el.value); }
+    render();
+  });
+});
+
+window.addEventListener('resize', render);
+
+// ---------- exercises ----------
+const exercises = [
+  {
+    q: 'Una señal periódica x(t) es PAR (x(t)=x(−t)). Razona por qué su serie de Fourier solo debería contener términos coseno (los coeficientes c<sub>k</sub> son reales).',
+    a: 'Al ser x(t) par, en la integral que define c<sub>k</sub> = (1/T₀)∫x(t)e<sup>−j2πkf₀t</sup>dt, la parte imaginaria proviene del término −j·sin(2πkf₀t), que es una función impar; al integrarla sobre un intervalo simétrico respecto al origen se anula, dejando c<sub>k</sub> real. En la forma trigonométrica equivalente esto significa que todos los coeficientes seno son cero: solo sobreviven los cosenos, que son las funciones pares de la base.'
+  },
+  {
+    q: 'Calcula la potencia media de una onda cuadrada de amplitud ±1 (a) directamente en el tiempo y (b) sumando |c<sub>k</sub>|² (Parseval). ¿A qué valor deberían converger ambas?',
+    a: 'En el tiempo: P=(1/T₀)∫|x(t)|²dt = 1² = <b>1</b>, porque la señal vale siempre ±1. Por Parseval: P=Σ|c<sub>k</sub>|²; para la onda cuadrada los coeficientes no nulos son c<sub>k</sub>=2/(jπk) para k impar, con |c<sub>k</sub>|²=4/(π²k²). Sumando sobre todos los armónicos impares esa serie converge también a 1. Cuantos más armónicos incluyas en la herramienta, más se acerca la suma parcial a ese valor — es una forma práctica de comprobar Parseval.'
+  },
+  {
+    q: '¿Por qué la aproximación de una onda cuadrada con un número finito de armónicos presenta siempre un pequeño "rizado" cerca de las discontinuidades, por muchos armónicos que se añadan? ¿Cómo se llama este fenómeno?',
+    a: 'Es el <b>fenómeno de Gibbs</b>. Cerca de una discontinuidad, la suma parcial de la serie siempre sobrepasa el valor final en aproximadamente un 9% del salto, independientemente del número de armónicos sumados: añadir más armónicos estrecha el rizado (lo acerca más a la discontinuidad) pero no reduce su amplitud relativa. Puedes observarlo subiendo el número de armónicos de la onda cuadrada o el diente de sierra en la herramienta.'
+  },
+  {
+    q: '¿Cómo se relaciona la Serie de Fourier de una señal periódica con su Transformada de Fourier? ¿Qué forma tiene X(f) para una señal periódica?',
+    a: 'Una señal periódica no es de energía finita, así que no tiene Transformada de Fourier en el sentido clásico — pero, permitiendo deltas de Dirac, su transformada es un <b>tren de impulsos</b> en cada armónico: X(f) = Σ<sub>k</sub> c<sub>k</sub>·δ(f−k·f₀). Es decir, la Serie de Fourier es el caso particular de la Transformada en el que, en lugar de un espectro continuo, la energía colapsa en líneas discretas espaciadas f₀ Hz, cada una con "peso" c<sub>k</sub>.'
+  },
+  {
+    q: 'Si duplicas la frecuencia fundamental f₀ de una señal (por ejemplo, de 2 a 4 Hz) sin cambiar su forma, ¿qué le ocurre a la separación entre líneas del espectro? Compruébalo en la herramienta.',
+    a: 'Las líneas espectrales están siempre en los múltiplos k·f₀, así que al duplicar f₀ la separación entre líneas también se duplica: el "peine" de armónicos se estira en el eje de frecuencias. Las amplitudes relativas |c<sub>k</sub>| (la forma de la envolvente) no cambian, solo se reescala el eje horizontal. Puedes verlo moviendo el slider de f₀ y observando cómo se separan (o se juntan) las líneas del espectro.'
+  }
+];
+
+const listEl = document.getElementById('exerciseList');
+exercises.forEach((ex,i)=>{
+  const div = document.createElement('div');
+  div.className='exercise';
+  div.innerHTML = `
+    <div class="ex-num">Ejercicio ${i+1}</div>
+    <p class="ex-q">${ex.q}</p>
+    <button class="ex-btn" type="button">Ver solución</button>
+    <div class="ex-answer">${ex.a}</div>
+  `;
+  const btn = div.querySelector('.ex-btn');
+  const ans = div.querySelector('.ex-answer');
+  btn.addEventListener('click', ()=>{
+    const showing = ans.classList.toggle('show');
+    btn.textContent = showing ? 'Ocultar solución' : 'Ver solución';
+  });
+  listEl.appendChild(div);
+});
+
+updateFieldVisibility();
+syncLabels();
+render();
+</script>
+</body>
+</html>

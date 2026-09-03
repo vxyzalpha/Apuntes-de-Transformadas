@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Señales y Fourier — Electrónica e Instrumentación</title>
+<style>
+  :root{
+    --bg:#0a1628;
+    --bg-plane:#081120;
+    --surface:#0f2038;
+    --surface-2:#13294a;
+    --grid-line:#1e3a5f;
+    --border:rgba(255,255,255,0.10);
+    --border-strong:rgba(255,255,255,0.18);
+    --text-primary:#f0f4f8;
+    --text-secondary:#9fb3c8;
+    --text-muted:#6b8199;
+    --blue:#3987e5;
+    --orange:#d95926;
+    --aqua:#199e70;
+    --yellow:#c98500;
+    --magenta:#d55181;
+    --violet:#9085e9;
+    --red:#e66767;
+    --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg-plane);
+    color:var(--text-primary);
+    font-family:var(--sans);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1040px;margin:0 auto;padding:0 20px 80px;}
+  a{color:var(--blue);}
+
+  .hero{
+    position:relative;
+    background:
+      repeating-linear-gradient(0deg, var(--grid-line) 0 1px, transparent 1px 32px),
+      repeating-linear-gradient(90deg, var(--grid-line) 0 1px, transparent 1px 32px),
+      linear-gradient(180deg, var(--bg) 0%, var(--bg-plane) 100%);
+    border-bottom:1px solid var(--border);
+    padding:56px 20px 46px;
+    margin-bottom:40px;
+  }
+  .hero:before{
+    content:"";
+    position:absolute; inset:0;
+    background:
+      repeating-linear-gradient(0deg, rgba(63,135,229,0.10) 0 1px, transparent 1px 32px),
+      repeating-linear-gradient(90deg, rgba(63,135,229,0.10) 0 1px, transparent 1px 32px);
+    pointer-events:none;
+  }
+  .hero-inner{max-width:1000px;margin:0 auto;position:relative;}
+  .eyebrow{
+    display:inline-block;
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--blue);
+    background:rgba(57,135,229,0.12);
+    border:1px solid rgba(57,135,229,0.35);
+    padding:4px 10px;
+    border-radius:4px;
+    margin-bottom:16px;
+  }
+  h1{
+    font-size:clamp(30px,4.4vw,44px);
+    margin:0 0 12px;
+    letter-spacing:-0.01em;
+  }
+  .subtitle{
+    color:var(--text-secondary);
+    font-size:17.5px;
+    max-width:680px;
+    margin:0;
+  }
+
+  h2{font-size:22px; margin:0 0 4px; letter-spacing:-0.005em;}
+  .section-label{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.09em;
+    text-transform:uppercase;
+    color:var(--text-muted);
+    margin-bottom:6px;
+  }
+  section{margin-bottom:46px;}
+  .lede{color:var(--text-secondary); max-width:760px;}
+
+  /* Topic cards */
+  .cards{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+    gap:20px;
+    margin-top:22px;
+  }
+  .topic-card{
+    position:relative;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:26px 24px 24px;
+    display:flex;
+    flex-direction:column;
+    text-decoration:none;
+    color:inherit;
+    transition:border-color .15s ease, transform .15s ease;
+  }
+  .topic-card:hover{border-color:var(--border-strong); transform:translateY(-2px);}
+  .topic-step{
+    font-family:var(--mono);
+    font-size:11.5px;
+    color:var(--text-muted);
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    margin-bottom:12px;
+  }
+  .topic-card h3{
+    margin:0 0 10px;
+    font-size:19px;
+    color:var(--text-primary);
+  }
+  .topic-card p{
+    margin:0 0 20px;
+    color:var(--text-secondary);
+    font-size:14.5px;
+    flex-grow:1;
+  }
+  .topic-cta{
+    font-family:var(--mono);
+    font-size:12.5px;
+    color:#8fbcf5;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+  }
+  .topic-card.t-series{border-top:3px solid var(--blue);}
+  .topic-card.t-transform{border-top:3px solid var(--aqua);}
+  .topic-card.t-nyquist{border-top:3px solid var(--magenta);}
+
+  .callout{
+    background:rgba(63,135,229,0.08);
+    border:1px solid rgba(63,135,229,0.3);
+    border-radius:8px;
+    padding:16px 18px;
+    color:var(--text-secondary);
+    font-size:14.5px;
+    margin-top:22px;
+  }
+  .callout b{color:var(--text-primary);}
+
+  .path{
+    display:flex; align-items:center; flex-wrap:wrap; gap:10px;
+    font-family:var(--mono); font-size:13px; color:var(--text-secondary);
+    margin-top:18px;
+  }
+  .path .node{
+    background:var(--surface-2); border:1px solid var(--border);
+    border-radius:999px; padding:6px 14px; color:var(--text-primary);
+  }
+  .path .arrow{color:var(--text-muted);}
+
+  footer{
+    margin-top:60px;
+    padding-top:20px;
+    border-top:1px solid var(--border);
+    color:var(--text-muted);
+    font-size:12.5px;
+    font-family:var(--mono);
+  }
+  @media (max-width:640px){
+    .hero{padding:40px 16px 32px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-inner">
+    <span class="eyebrow">Electrónica e Instrumentación · UPM</span>
+    <h1>Señales, Fourier y muestreo digital</h1>
+    <p class="subtitle">Tres herramientas interactivas para entender cómo se describe una señal en frecuencia — y qué ocurre cuando esa señal se digitaliza. Ajusta los parámetros, observa el espectro en tiempo real y comprueba lo aprendido con los ejercicios de cada página.</p>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <section id="temas">
+    <div class="section-label">Contenidos</div>
+    <h2>Elige un tema</h2>
+    <p class="lede">Si es la primera vez que ves este material, el orden recomendado es Serie → Transformada → Nyquist: primero señales periódicas, después señales de un solo evento, y por último qué ocurre al muestrearlas.</p>
+
+    <div class="cards">
+      <a class="topic-card t-series" href="fourier-series.html">
+        <span class="topic-step">01 · Señales periódicas</span>
+        <h3>La Serie de Fourier</h3>
+        <p>Toda señal periódica es una suma de armónicos a múltiplos de una frecuencia fundamental f₀. Construye ondas cuadradas, dientes de sierra y trenes de pulsos, y observa su espectro de líneas — incluido el fenómeno de Gibbs.</p>
+        <span class="topic-cta">Explorar →</span>
+      </a>
+
+      <a class="topic-card t-transform" href="fourier-transform.html">
+        <span class="topic-step">02 · Señales aperiódicas</span>
+        <h3>La Transformada de Fourier</h3>
+        <p>Qué ocurre cuando una señal no se repite: pulsos, transitorios, exponenciales. Su contenido en frecuencia es un espectro continuo X(f), y su ancho de banda depende directamente de su duración.</p>
+        <span class="topic-cta">Explorar →</span>
+      </a>
+
+      <a class="topic-card t-nyquist" href="nyquist.html">
+        <span class="topic-step">03 · Del mundo analógico al digital</span>
+        <h3>Teorema de Nyquist-Shannon</h3>
+        <p>Cuántas muestras por segundo hacen falta para no perder información al digitalizar una señal, y qué es exactamente el aliasing cuando se muestrea demasiado despacio.</p>
+        <span class="topic-cta">Explorar →</span>
+      </a>
+    </div>
+
+    <div class="path">
+      <span class="node">Serie de Fourier</span><span class="arrow">→</span>
+      <span class="node">Transformada de Fourier</span><span class="arrow">→</span>
+      <span class="node">Nyquist-Shannon</span>
+    </div>
+
+    <div class="callout">
+      <b>Cómo usar estas páginas:</b> cada tema incluye una herramienta interactiva (mueve los sliders y cambia la forma de la señal para ver el efecto en su espectro) y una sección de ejercicios con solución oculta, pensada para autoevaluarse antes de un examen o práctica de laboratorio.
+    </div>
+  </section>
+
+  <footer>
+    Electrónica e Instrumentación · Material de apoyo interactivo — generado con Claude.
+  </footer>
+</div>
+
+</body>
+</html>

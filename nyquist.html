@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teorema de Nyquist-Shannon — Electrónica e Instrumentación</title>
+<style>
+  :root{
+    --bg:#0a1628;
+    --bg-plane:#081120;
+    --surface:#0f2038;
+    --surface-2:#13294a;
+    --grid-line:#1e3a5f;
+    --border:rgba(255,255,255,0.10);
+    --border-strong:rgba(255,255,255,0.18);
+    --text-primary:#f0f4f8;
+    --text-secondary:#9fb3c8;
+    --text-muted:#6b8199;
+    --blue:#3987e5;
+    --orange:#d95926;
+    --aqua:#199e70;
+    --yellow:#c98500;
+    --magenta:#d55181;
+    --violet:#9085e9;
+    --red:#e66767;
+    --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg-plane);
+    color:var(--text-primary);
+    font-family:var(--sans);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1040px;margin:0 auto;padding:0 20px 80px;}
+  a{color:var(--blue);}
+
+  .hero{
+    position:relative;
+    background:linear-gradient(180deg, var(--bg) 0%, var(--bg-plane) 100%);
+    border-bottom:1px solid var(--border);
+    padding:42px 20px 30px;
+    margin-bottom:34px;
+    overflow:hidden;
+  }
+  .hero:before{
+    content:"";
+    position:absolute; inset:0;
+    background:
+      repeating-linear-gradient(0deg, rgba(63,135,229,0.10) 0 1px, transparent 1px 32px),
+      repeating-linear-gradient(90deg, rgba(63,135,229,0.10) 0 1px, transparent 1px 32px);
+    pointer-events:none;
+  }
+  .hero-inner{max-width:1000px;margin:0 auto;position:relative;}
+  .eyebrow{
+    display:inline-block;
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--blue);
+    background:rgba(57,135,229,0.12);
+    border:1px solid rgba(57,135,229,0.35);
+    padding:4px 10px;
+    border-radius:4px;
+    margin-bottom:16px;
+  }
+  h1{
+    font-size:clamp(26px,4vw,38px);
+    margin:0 0 10px;
+    letter-spacing:-0.01em;
+  }
+  .subtitle{
+    color:var(--text-secondary);
+    font-size:17px;
+    max-width:660px;
+    margin:0;
+  }
+  .pagenav{
+    margin-top:16px;
+    font-family:var(--mono);
+    font-size:13px;
+  }
+  .pagenav a{color:#8fbcf5; text-decoration:none; border-bottom:1px dashed rgba(143,188,245,0.4);}
+  .pagenav a:hover{border-bottom-style:solid;}
+
+  h2{font-size:22px; margin:0 0 4px; letter-spacing:-0.005em;}
+  .section-label{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.09em;
+    text-transform:uppercase;
+    color:var(--text-muted);
+    margin-bottom:6px;
+  }
+  section{margin-bottom:46px;}
+  .lede{color:var(--text-secondary); max-width:760px;}
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:24px;
+  }
+
+  .controls{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:16px 24px;
+    margin-bottom:22px;
+    padding-bottom:20px;
+    border-bottom:1px dashed var(--border);
+    align-items:end;
+  }
+  .field label{
+    display:flex; justify-content:space-between;
+    font-size:12.5px; color:var(--text-secondary);
+    margin-bottom:6px; font-family:var(--mono);
+  }
+  .field label .val{color:var(--text-primary); font-weight:600;}
+  input[type=range]{
+    width:100%;
+    -webkit-appearance:none;
+    height:4px; border-radius:2px;
+    background:var(--grid-line); outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:15px;height:15px;border-radius:50%;
+    background:var(--blue); border:2px solid #cfe0fb; cursor:pointer; margin-top:-6px;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:13px;height:13px;border-radius:50%;
+    background:var(--blue); border:2px solid #cfe0fb; cursor:pointer;
+  }
+  .checkline{
+    display:flex; align-items:center; gap:8px;
+    font-size:13.5px; color:var(--text-secondary); font-family:var(--mono);
+  }
+
+  .plots{display:grid; grid-template-columns:1fr; gap:18px;}
+  .plot-box{background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:14px 16px 10px;}
+  .plot-title{font-size:12.5px; color:var(--text-secondary); font-family:var(--mono); display:flex; justify-content:space-between; margin-bottom:6px;}
+  canvas{width:100%; display:block; border-radius:4px;}
+
+  .status-row{display:flex; flex-wrap:wrap; gap:10px 22px; align-items:center; margin-top:16px;}
+  .status-pill{
+    font-family:var(--mono); font-size:12.5px; padding:5px 12px; border-radius:999px;
+    border:1px solid; display:inline-flex; align-items:center; gap:6px;
+  }
+  .status-ok{background:rgba(25,158,112,0.15); color:#4fd8a4; border-color:rgba(25,158,112,0.4);}
+  .status-bad{background:rgba(230,103,103,0.15); color:#ff9d9d; border-color:rgba(230,103,103,0.45);}
+  .stat{font-family:var(--mono); font-size:12.5px; color:var(--text-muted);}
+  .stat b{color:var(--text-primary); font-weight:600;}
+  .legend-line{display:flex; align-items:center; gap:14px; font-family:var(--mono); font-size:11.5px; color:var(--text-muted); margin-top:10px; flex-wrap:wrap;}
+  .legend-item{display:flex; align-items:center; gap:6px;}
+  .swatch{width:16px; height:3px; border-radius:2px; display:inline-block;}
+
+  .formula-box{
+    background:var(--surface-2); border:1px solid var(--border); border-radius:8px;
+    padding:18px 20px;
+  }
+  .formula-box .flabel{font-family:var(--mono); font-size:12px; color:var(--blue); margin-bottom:8px; text-transform:uppercase; letter-spacing:.06em;}
+  .formula-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px;}
+
+  /* Math typesetting (pure HTML/CSS — no external fonts or libraries required) */
+  .eq{
+    font-family:"Cambria Math","STIX Two Math",Georgia,"Times New Roman",serif;
+    font-size:17px;
+    color:var(--text-primary);
+    letter-spacing:.01em;
+  }
+  .eq i{font-style:italic;}
+  .eq sup, .eq sub{font-size:0.64em;}
+  .intlim, .sumlim{
+    display:inline-flex; flex-direction:column; align-items:center; justify-content:center;
+    font-size:1.5em; line-height:0.6; vertical-align:middle; margin:0 3px; position:relative; top:3px;
+  }
+  .intlim sup, .sumlim sup{font-size:0.32em; line-height:1; margin-bottom:1px;}
+  .intlim sub, .sumlim sub{font-size:0.32em; line-height:1; margin-top:1px;}
+  .frac{
+    display:inline-flex; flex-direction:column; vertical-align:middle;
+    text-align:center; margin:0 4px; line-height:1.15; font-size:0.92em; position:relative; top:2px;
+  }
+  .frac .n{padding:0 3px; border-bottom:1.3px solid currentColor;}
+  .frac .d{padding:1px 3px 0;}
+
+  .exercise{
+    border:1px solid var(--border); border-radius:8px; background:var(--surface-2);
+    padding:18px 20px; margin-bottom:14px;
+  }
+  .exercise:last-child{margin-bottom:0;}
+  .ex-num{font-family:var(--mono); font-size:12px; color:var(--blue); margin-bottom:6px;}
+  .ex-q{color:var(--text-primary); margin:0 0 14px; font-size:15px;}
+  .ex-btn{
+    background:rgba(57,135,229,0.15); color:#8fbcf5; border:1px solid rgba(57,135,229,0.4);
+    border-radius:6px; padding:7px 14px; font-family:var(--mono); font-size:12.5px; cursor:pointer;
+  }
+  .ex-btn:hover{background:rgba(57,135,229,0.25);}
+  .ex-answer{
+    margin-top:14px; padding-top:14px; border-top:1px dashed var(--border);
+    color:var(--text-secondary); font-size:14.5px; display:none;
+  }
+  .ex-answer.show{display:block;}
+
+  footer{
+    margin-top:60px; padding-top:20px; border-top:1px solid var(--border);
+    color:var(--text-muted); font-size:12.5px; font-family:var(--mono);
+  }
+  @media (max-width:640px){
+    .hero{padding:32px 16px 24px;}
+    .card{padding:18px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-inner">
+    <span class="eyebrow">Electrónica e Instrumentación · UPM</span>
+    <h1>Teorema de Muestreo de Nyquist-Shannon</h1>
+    <p class="subtitle">Cuántas muestras por segundo necesitas para no perder información al digitalizar una señal — y qué pasa exactamente cuando muestreas demasiado despacio.</p>
+    <p class="pagenav">← <a href="index.html">Inicio</a> &nbsp;·&nbsp; Ver también: <a href="fourier-series.html">la Serie de Fourier</a> &nbsp;·&nbsp; <a href="fourier-transform.html">la Transformada de Fourier</a></p>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <section id="intuicion">
+    <div class="section-label">01 · Idea intuitiva</div>
+    <h2>Muestrear es fotografiar una señal continua</h2>
+    <p class="lede">
+      Un conversor analógico-digital (ADC) no "ve" la señal completa: toma valores instantáneos a intervalos regulares, cada <span style="color:var(--text-primary)">T = 1/f<sub>s</sub></span> segundos. Si esas fotos se toman con suficiente frecuencia, se puede reconstruir la señal original sin pérdida. Si se toman demasiado despacio, dos señales de frecuencias distintas pueden dejar <i>exactamente las mismas muestras</i> — y a partir de ahí ya no hay forma de saber cuál era la original. A ese fenómeno se le llama <b style="color:var(--text-primary)">aliasing</b> (solapamiento).
+    </p>
+    <p class="lede">
+      El teorema de Nyquist-Shannon lo hace preciso: si una señal no contiene componentes por encima de <span style="color:var(--text-primary)">f<sub>max</sub></span>, basta con muestrear a <span style="color:var(--text-primary)">f<sub>s</sub> &gt; 2f<sub>max</sub></span> para poder reconstruirla exactamente a partir de sus muestras. A esa frecuencia mínima se la llama <b style="color:var(--text-primary)">frecuencia de Nyquist</b> del sistema, <span style="color:var(--text-primary)">f<sub>s</sub>/2</span>: el límite superior de lo que se puede representar sin ambigüedad.
+    </p>
+  </section>
+
+  <section id="formulas">
+    <div class="section-label">02 · Fórmulas clave</div>
+    <div class="formula-grid">
+      <div class="formula-box">
+        <div class="flabel">Criterio de Nyquist-Shannon</div>
+        <div class="eq"><i>f</i><sub>s</sub> &gt; 2&thinsp;<i>f</i><sub>max</sub></div>
+      </div>
+      <div class="formula-box">
+        <div class="flabel">Frecuencia de Nyquist del sistema</div>
+        <div class="eq"><i>f</i><sub>N</sub> = <span class="frac"><span class="n"><i>f</i><sub>s</sub></span><span class="d">2</span></span></div>
+      </div>
+      <div class="formula-box">
+        <div class="flabel">Frecuencia aparente por aliasing (plegado)</div>
+        <div class="eq"><i>f</i><sub>alias</sub> = | <i>f</i>₀ − <i>f</i><sub>s</sub>&middot;round(<span class="frac"><span class="n"><i>f</i>₀</span><span class="d"><i>f</i><sub>s</sub></span></span>) |</div>
+      </div>
+      <div class="formula-box">
+        <div class="flabel">Reconstrucción ideal (interpolación sinc)</div>
+        <div class="eq"><i>x</i>(<i>t</i>) = <span class="sumlim">Σ<sup>∞</sup><sub><i>n</i>=−∞</sub></span> <i>x</i>[<i>n</i>]&thinsp;sinc(<i>f</i><sub>s</sub>(<i>t</i>−<i>n</i>/<i>f</i><sub>s</sub>))</div>
+        <div class="eq" style="margin-top:8px; font-size:15px; color:var(--text-secondary);">sinc(<i>u</i>) = <span class="frac"><span class="n">sin(π<i>u</i>)</span><span class="d">π<i>u</i></span></span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="explorador">
+    <div class="section-label">03 · Herramienta interactiva</div>
+    <h2>Muestreo, aliasing y reconstrucción</h2>
+    <p class="lede">Una señal senoidal continua de frecuencia f₀ se muestrea a f<sub>s</sub>. Observa qué ocurre con las muestras, con la reconstrucción por interpolación sinc, y con el espectro cuando f<sub>s</sub> cae por debajo de 2f₀.</p>
+
+    <div class="card">
+      <div class="controls">
+        <div class="field">
+          <label>Frecuencia de la señal f₀ <span class="val" id="v-f0">6.0 Hz</span></label>
+          <input type="range" id="f0" min="1" max="20" step="0.5" value="6">
+        </div>
+        <div class="field">
+          <label><span>Frecuencia de muestreo f<sub>s</sub></span> <span class="val" id="v-fs">18.0 Hz</span></label>
+          <input type="range" id="fs" min="2" max="60" step="0.5" value="18">
+        </div>
+        <div class="field">
+          <label style="margin-bottom:0;">&nbsp;</label>
+          <div class="checkline"><input type="checkbox" id="showRecon" checked> mostrar reconstrucción (sinc)</div>
+        </div>
+      </div>
+
+      <div class="status-row" id="statusRow"></div>
+
+      <div class="plots" style="margin-top:18px;">
+        <div class="plot-box">
+          <div class="plot-title"><span>DOMINIO DEL TIEMPO — señal, muestras y reconstrucción</span></div>
+          <canvas id="cvTime" height="200"></canvas>
+          <div class="legend-line">
+            <span class="legend-item"><span class="swatch" style="background:#3987e5"></span>señal continua x(t)</span>
+            <span class="legend-item"><span class="swatch" style="background:#c98500;height:8px;width:8px;border-radius:50%;"></span>muestras (fₛ)</span>
+            <span class="legend-item"><span class="swatch" style="background:#e66767; height:2px; background-image:linear-gradient(90deg,#e66767 60%,transparent 40%); background-size:8px 2px;"></span>reconstrucción sinc</span>
+          </div>
+        </div>
+        <div class="plot-box">
+          <div class="plot-title"><span>DOMINIO DE LA FRECUENCIA — réplicas espectrales por el muestreo</span></div>
+          <canvas id="cvSpec" height="180"></canvas>
+          <div class="legend-line">
+            <span class="legend-item"><span class="swatch" style="background:#3987e5"></span>componente original (±f₀)</span>
+            <span class="legend-item"><span class="swatch" style="background:#6b8199"></span>réplicas por muestreo</span>
+            <span class="legend-item"><span class="swatch" style="background:#e66767"></span>plegada dentro de la zona de Nyquist</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="ejercicios">
+    <div class="section-label">04 · Ejercicios</div>
+    <h2>Comprueba lo aprendido</h2>
+    <div id="exerciseList"></div>
+  </section>
+
+  <footer>
+    Electrónica e Instrumentación · Material de apoyo interactivo — generado con Claude.
+  </footer>
+</div>
+
+<script>
+// ---------- state ----------
+const state = { f0: 6, fs: 18, showRecon: true };
+const els = {
+  f0: document.getElementById('f0'),
+  fs: document.getElementById('fs'),
+  showRecon: document.getElementById('showRecon'),
+};
+
+function foldAlias(f0, fs){
+  let m = f0 % fs; if(m<0) m += fs;
+  if(m > fs/2) m = fs - m;
+  return m;
+}
+
+function setupCanvas(canvas){
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  const h = canvas.height;
+  canvas.width = rect.width*dpr;
+  canvas.height = h*dpr;
+  canvas.style.height = h+'px';
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {ctx, w: rect.width, h};
+}
+
+function drawGrid(ctx,w,h,pad,rows=4,cols=8){
+  ctx.strokeStyle='rgba(255,255,255,0.06)'; ctx.lineWidth=1;
+  for(let i=0;i<=rows;i++){
+    const y = pad.t + (h-pad.t-pad.b)*i/rows;
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(w-pad.r,y); ctx.stroke();
+  }
+  for(let i=0;i<=cols;i++){
+    const x = pad.l + (w-pad.l-pad.r)*i/cols;
+    ctx.beginPath(); ctx.moveTo(x,pad.t); ctx.lineTo(x,h-pad.b); ctx.stroke();
+  }
+  ctx.strokeStyle='rgba(255,255,255,0.18)';
+  ctx.beginPath(); ctx.moveTo(pad.l,h-pad.b); ctx.lineTo(w-pad.r,h-pad.b); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pad.l,pad.t); ctx.lineTo(pad.l,h-pad.b); ctx.stroke();
+}
+
+function drawTime(){
+  const canvas = document.getElementById('cvTime');
+  const {ctx,w,h} = setupCanvas(canvas);
+  const pad = {l:38,r:14,t:12,b:22};
+  ctx.clearRect(0,0,w,h);
+  drawGrid(ctx,w,h,pad);
+
+  const {f0, fs} = state;
+  const duration = Math.min(3, Math.max(1, 3/f0));
+  const plotH = h-pad.t-pad.b, plotW = w-pad.l-pad.r;
+  const yToPx = (y)=> pad.t + plotH*(0.5 - y*0.42);
+
+  ctx.strokeStyle='rgba(255,255,255,0.28)';
+  ctx.beginPath(); ctx.moveTo(pad.l,yToPx(0)); ctx.lineTo(w-pad.r,yToPx(0)); ctx.stroke();
+
+  // continuous signal
+  const Nplot=600;
+  ctx.strokeStyle='#3987e5'; ctx.lineWidth=2; ctx.beginPath();
+  for(let i=0;i<=Nplot;i++){
+    const t = duration*i/Nplot;
+    const y = Math.sin(2*Math.PI*f0*t);
+    const x = pad.l + plotW*i/Nplot;
+    const py = yToPx(y);
+    if(i===0) ctx.moveTo(x,py); else ctx.lineTo(x,py);
+  }
+  ctx.stroke();
+
+  // samples (with a little padding beyond the window for a better sinc reconstruction)
+  const padSamples = Math.ceil(fs*0.5)+2;
+  const nMax = Math.ceil(duration*fs)+padSamples;
+  const samples = [];
+  for(let n=-padSamples;n<=nMax;n++){
+    const tn = n/fs;
+    samples.push({tn, xn: Math.sin(2*Math.PI*f0*tn)});
+  }
+
+  // reconstruction (sinc interpolation)
+  if(state.showRecon){
+    ctx.setLineDash([6,4]);
+    ctx.strokeStyle='#e66767'; ctx.lineWidth=2; ctx.beginPath();
+    for(let i=0;i<=Nplot;i++){
+      const t = duration*i/Nplot;
+      let sum=0;
+      for(const s of samples){
+        const u = fs*(t-s.tn);
+        sum += s.xn * (Math.abs(u)<1e-9 ? 1 : Math.sin(Math.PI*u)/(Math.PI*u));
+      }
+      const x = pad.l + plotW*i/Nplot;
+      const py = yToPx(sum);
+      if(i===0) ctx.moveTo(x,py); else ctx.lineTo(x,py);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // sample dots (only within display window)
+  ctx.fillStyle='#c98500';
+  samples.forEach(s=>{
+    if(s.tn<0 || s.tn>duration) return;
+    const x = pad.l + plotW*(s.tn/duration);
+    const y = yToPx(s.xn);
+    ctx.beginPath(); ctx.arc(x,y,4,0,Math.PI*2); ctx.fill();
+  });
+
+  ctx.fillStyle='#6b8199'; ctx.font='11px monospace';
+  ctx.textAlign='left'; ctx.fillText('0', pad.l-2, h-6);
+  ctx.textAlign='right'; ctx.fillText(duration.toFixed(2)+' s', w-pad.r, h-6);
+}
+
+function drawSpectrum(){
+  const canvas = document.getElementById('cvSpec');
+  const {ctx,w,h} = setupCanvas(canvas);
+  const pad = {l:38,r:14,t:14,b:24};
+  ctx.clearRect(0,0,w,h);
+
+  const {f0, fs} = state;
+  const halfRange = Math.max(fs*1.6, f0*1.3, 8);
+  const plotW = w-pad.l-pad.r, plotH = h-pad.t-pad.b;
+  const fToX = (f)=> pad.l + plotW*((f+halfRange)/(2*halfRange));
+
+  drawGrid(ctx,w,h,pad,3,10);
+
+  // Nyquist zone shading
+  const nyqL = fToX(-fs/2), nyqR = fToX(fs/2);
+  ctx.fillStyle='rgba(63,135,229,0.08)';
+  ctx.fillRect(nyqL, pad.t, nyqR-nyqL, plotH);
+  ctx.strokeStyle='rgba(63,135,229,0.35)'; ctx.setLineDash([4,3]);
+  ctx.beginPath(); ctx.moveTo(nyqL,pad.t); ctx.lineTo(nyqL,h-pad.b); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(nyqR,pad.t); ctx.lineTo(nyqR,h-pad.b); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // zero freq axis
+  ctx.strokeStyle='rgba(255,255,255,0.22)';
+  ctx.beginPath(); ctx.moveTo(pad.l,h-pad.b); ctx.lineTo(w-pad.r,h-pad.b); ctx.stroke();
+
+  const topY = pad.t+6, baseY = h-pad.b;
+  const alias = foldAlias(f0, fs);
+  const aliasing = fs < 2*f0;
+
+  const kMin = Math.ceil((-halfRange-f0)/fs)-1;
+  const kMax = Math.floor((halfRange+f0)/fs)+1;
+  for(let k=kMin;k<=kMax;k++){
+    [f0,-f0].forEach(sign=>{
+      const f = k*fs + sign;
+      if(f < -halfRange || f > halfRange) return;
+      const x = fToX(f);
+      const isBase = (k===0);
+      const inNyquistZone = Math.abs(f) <= fs/2 + 1e-9;
+      const color = isBase ? '#3987e5' : (inNyquistZone ? '#e66767' : '#6b8199');
+      ctx.strokeStyle = color; ctx.lineWidth = isBase?2.6:2;
+      ctx.globalAlpha = isBase ? 1 : 0.85;
+      ctx.beginPath(); ctx.moveTo(x,baseY); ctx.lineTo(x,topY); ctx.stroke();
+      ctx.beginPath(); ctx.fillStyle=color; ctx.arc(x,topY,3.2,0,Math.PI*2); ctx.fill();
+      ctx.globalAlpha = 1;
+    });
+  }
+
+  ctx.fillStyle='#6b8199'; ctx.font='11px monospace';
+  ctx.textAlign='center';
+  ctx.fillText('0', fToX(0), h-8);
+  ctx.fillText('f₀', fToX(f0), h-8);
+  ctx.fillText('−f₀', fToX(-f0), h-8);
+  ctx.fillText('fs/2', fToX(fs/2), pad.t-2>0?pad.t+0:0);
+  ctx.textAlign='left';
+  ctx.fillStyle='#8fbcf5';
+  ctx.fillText('zona de Nyquist [−fs/2, +fs/2]', pad.l+4, pad.t+12);
+}
+
+function render(){
+  document.getElementById('v-f0').textContent = state.f0.toFixed(1)+' Hz';
+  document.getElementById('v-fs').textContent = state.fs.toFixed(1)+' Hz';
+
+  drawTime();
+  drawSpectrum();
+
+  const nyq = state.fs/2;
+  const aliasing = state.fs < 2*state.f0;
+  const alias = foldAlias(state.f0, state.fs);
+
+  let html = '';
+  html += '<span class="status-pill '+(aliasing?'status-bad':'status-ok')+'">'+(aliasing?'⚠ ALIASING':'✓ Nyquist cumplido')+'</span>';
+  html += '<span class="stat">f<sub>Nyquist</sub> = <b>'+nyq.toFixed(1)+' Hz</b></span>';
+  if(aliasing){
+    html += '<span class="stat">frecuencia aparente reconstruida: <b>'+alias.toFixed(2)+' Hz</b> (en vez de '+state.f0.toFixed(1)+' Hz)</span>';
+  } else {
+    html += '<span class="stat">margen sobre Nyquist: <b>'+(state.fs-2*state.f0).toFixed(1)+' Hz</b></span>';
+  }
+  document.getElementById('statusRow').innerHTML = html;
+}
+
+Object.keys(els).forEach(key=>{
+  const el = els[key];
+  el.addEventListener('input', ()=>{
+    state[key] = (el.type==='checkbox') ? el.checked : parseFloat(el.value);
+    render();
+  });
+});
+window.addEventListener('resize', render);
+
+// ---------- exercises ----------
+const exercises = [
+  {
+    q: 'Una señal de audio contiene componentes de frecuencia hasta 20 kHz. Según el teorema de Nyquist-Shannon, ¿cuál es la frecuencia mínima de muestreo necesaria para reconstruirla sin pérdida? ¿Por qué el estándar de CD de audio usa 44.1 kHz y no 40 kHz exactos?',
+    a: 'La frecuencia mínima es f<sub>s</sub> &gt; 2·20&nbsp;kHz = 40&nbsp;kHz (frecuencia de Nyquist para f<sub>max</sub>=20&nbsp;kHz). El CD usa 44.1&nbsp;kHz para dejar un <b>margen de guarda</b>: ningún filtro anti-aliasing real corta de forma perfectamente abrupta en 20&nbsp;kHz, sino que tiene una banda de transición. Ese margen extra evita que la cola del filtro deje pasar componentes por encima de 20&nbsp;kHz que provocarían aliasing.'
+  },
+  {
+    q: 'Una señal senoidal de 6 Hz se muestrea a 8 muestras por segundo. ¿Qué frecuencia "verá" alguien que solo disponga de las muestras?',
+    a: 'Con f<sub>0</sub>=6&nbsp;Hz y f<sub>s</sub>=8&nbsp;Hz: f<sub>alias</sub> = |f₀ − f<sub>s</sub>·round(f₀/f<sub>s</sub>)| = |6 − 8·round(0.75)| = |6−8| = <b>2&nbsp;Hz</b>. Las muestras son indistinguibles de las de una senoide real de 2&nbsp;Hz — puedes comprobarlo poniendo f₀=6 y f<sub>s</sub>=8 en la herramienta de arriba.'
+  },
+  {
+    q: '¿Qué es un filtro anti-aliasing y en qué punto de la cadena de adquisición debe colocarse?',
+    a: 'Es un filtro paso-bajo <b>analógico</b> que limita el ancho de banda de la señal a f<sub>s</sub>/2 antes de que llegue al muestreo. Debe colocarse <b>antes del ADC</b> (en el dominio analógico): una vez que el aliasing se produce durante el muestreo, es irreversible — filtrar después de muestrear no puede separar la componente original de su alias, porque ambas generan exactamente las mismas muestras.'
+  },
+  {
+    q: 'Verdadero o falso, con justificación: "Si muestreo exactamente al doble de la frecuencia máxima de la señal (f<sub>s</sub>=2f<sub>max</sub>), siempre podré reconstruirla perfectamente."',
+    a: '<b>Falso</b>, con matiz. El teorema exige la desigualdad <b>estricta</b> f<sub>s</sub> &gt; 2f<sub>max</sub>. En el caso límite f<sub>s</sub>=2f<sub>max</sub>, dependiendo de la fase de la componente en f<sub>max</sub>, las muestras pueden caer justo en los cruces por cero de esa componente, perdiéndola por completo. Además, la reconstrucción exacta requiere un interpolador sinc ideal de duración infinita, algo no realizable físicamente — por eso en la práctica siempre se muestrea con margen adicional sobre 2f<sub>max</sub>.'
+  },
+  {
+    q: 'Dado f<sub>s</sub>=1000&nbsp;Hz, ¿cuál es la frecuencia de Nyquist del sistema? ¿Qué le ocurre a una componente de 700&nbsp;Hz presente en la entrada analógica si el filtro anti-aliasing no la elimina antes de muestrear?',
+    a: 'La frecuencia de Nyquist es f<sub>N</sub>=f<sub>s</sub>/2=<b>500&nbsp;Hz</b>. Como 700&nbsp;Hz &gt; 500&nbsp;Hz, esa componente se pliega dentro de la banda base: f<sub>alias</sub>=|700−1000·round(0.7)|=|700−1000|=<b>300&nbsp;Hz</b>. Tras el muestreo, esa energía es indistinguible de una componente genuina de 300&nbsp;Hz — contamina esa parte del espectro sin posibilidad de separarla después.'
+  }
+];
+
+const listEl = document.getElementById('exerciseList');
+exercises.forEach((ex,i)=>{
+  const div = document.createElement('div');
+  div.className='exercise';
+  div.innerHTML = `
+    <div class="ex-num">Ejercicio ${i+1}</div>
+    <p class="ex-q">${ex.q}</p>
+    <button class="ex-btn" type="button">Ver solución</button>
+    <div class="ex-answer">${ex.a}</div>
+  `;
+  const btn = div.querySelector('.ex-btn');
+  const ans = div.querySelector('.ex-answer');
+  btn.addEventListener('click', ()=>{
+    const showing = ans.classList.toggle('show');
+    btn.textContent = showing ? 'Ocultar solución' : 'Ver solución';
+  });
+  listEl.appendChild(div);
+});
+
+render();
+</script>
+</body>
+</html>
